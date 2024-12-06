@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
 import 'login_page.dart';
 import 'home_page.dart';
 import 'register_page.dart';
@@ -9,12 +10,20 @@ import 'leaderboard.dart';
 import 'calibration_flow.dart';
 import 'workout_plan.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp());
+  await Firebase.initializeApp(
+    options: FirebaseOptions(apiKey: "AIzaSyC2DwyRQ73euQ9jmQwFx4SewisfY6tyH3I",
+        appId: "1:600859582963:android:e769840ff24ef4c034f286",
+        messagingSenderId: "600859582963",
+        projectId: "buddy-quest-cb217")
+  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -23,7 +32,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: RootScreen(), // Root logic
+      home: RootScreen(),
       routes: {
         '/home': (context) => HomePage(),
         '/login': (context) => LoginPage(),
