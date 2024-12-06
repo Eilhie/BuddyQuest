@@ -1,11 +1,74 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_page.dart';
 import 'register_page.dart';
 
-class LoginPage extends StatelessWidget {
+class LoginPage extends StatefulWidget {
+  @override
+  _LoginPageState createState() => _LoginPageState();
+}
+
+class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: '600859582963-hjasr99uot5fu3brv9fsl60756bp0vg6.apps.googleusercontent.com', // Add your client ID here
+  );
+
+  // Login with Email & Password
+  Future<void> _signInWithEmailPassword() async {
+    try {
+      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    } catch (e) {
+      print('Error during sign-in: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to sign in. Please try again.')),
+      );
+    }
+  }
+
+  // Login with Google
+  Future<void> _signInWithGoogle() async {
+    try {
+      GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+
+      // Create a new credential for Firebase
+      AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    } catch (e) {
+      print('Error during Google sign-in: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Google sign-in failed. Please try again.')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -24,7 +87,8 @@ class LoginPage extends StatelessWidget {
               ),
             ),
             SizedBox(height: 30),
-            Text("Email",
+            Text(
+              "Email",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -33,16 +97,12 @@ class LoginPage extends StatelessWidget {
             TextField(
               controller: _emailController,
               decoration: InputDecoration(
-                hintText: 'Enter your email', // Placeholder text
-                hintStyle: TextStyle(
-                  color: Colors.grey,  // Change hint text color
-                  fontSize: 16.0,      // Change font size
-                  fontStyle: FontStyle.italic, // Make it italic
-                ),
+                hintText: 'Enter your email',
               ),
             ),
             Padding(padding: EdgeInsets.all(10.0)),
-            Text("Password",
+            Text(
+              "Password",
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -51,41 +111,39 @@ class LoginPage extends StatelessWidget {
             TextField(
               controller: _passwordController,
               decoration: InputDecoration(
-                hintText: 'Enter your password', // Placeholder text
-                hintStyle: TextStyle(
-                  color: Colors.grey,  // Change hint text color
-                  fontSize: 16.0,      // Change font size
-                  fontStyle: FontStyle.italic, // Make it italic
-                ),
+                hintText: 'Enter your password',
               ),
             ),
             SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () async {
-                // Simulate login logic (check credentials, etc.)
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                await prefs.setBool('isLoggedIn', true);
-
-                // Navigate to the home page after login
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                );
-              },
+              onPressed: _signInWithEmailPassword,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0x9954473F), // Button color
+                backgroundColor: Color(0x9954473F),
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                minimumSize: Size(double.infinity, 60), // Full width, 60px height
+                minimumSize: Size(double.infinity, 60),
               ),
               child: Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
             SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _signInWithGoogle,
+              icon: Icon(Icons.login),
+              label: Text('Sign In with Google'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: Size(double.infinity, 60),
+              ),
+            ),
+            SizedBox(height: 20),
             TextButton(
               onPressed: () {
-                // Navigate to Register page
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => RegisterPage()),
