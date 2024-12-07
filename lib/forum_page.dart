@@ -209,11 +209,7 @@ class _ForumPageState extends State<ForumPage> {
             children: [
               Row(
                 children: [
-                  _buildActionIcon(Icons.chat_bubble_outline, "10"),
-                  SizedBox(width: 16),
                   _buildActionIcon(Icons.thumb_up_alt_outlined, "10"),
-                  SizedBox(width: 16),
-                  _buildActionIcon(Icons.thumb_down_alt_outlined, "10"),
                 ],
               ),
             ],
@@ -242,6 +238,11 @@ class _ForumPageState extends State<ForumPage> {
         SizedBox(width: 6),
         Text(
           count,
+          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+        ),
+        SizedBox(width: 6),
+        Text(
+          "Likes",
           style: TextStyle(fontSize: 12, color: Colors.grey[700]),
         ),
       ],

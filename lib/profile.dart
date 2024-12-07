@@ -1,8 +1,16 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'avatar_selection_page.dart'; // Import the new page
 
-class ProfilePage extends StatelessWidget {
+class ProfilePage extends StatefulWidget {
+  @override
+  _ProfilePageState createState() => _ProfilePageState();
+}
+
+class _ProfilePageState extends State<ProfilePage> {
+  String _profileImage = 'assets/profile_picture.png'; // Default profile image
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -14,7 +22,7 @@ class ProfilePage extends StatelessWidget {
             children: [
               SizedBox(height: 20),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween, // Place children on the left and right
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
                     icon: Icon(Icons.arrow_back),
@@ -22,11 +30,12 @@ class ProfilePage extends StatelessWidget {
                       Navigator.pop(context);
                     },
                   ),
-                  Text('Profile',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  Text(
+                    'Profile',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   IconButton(
                     icon: Icon(Icons.settings),
@@ -38,10 +47,15 @@ class ProfilePage extends StatelessWidget {
               ),
               Padding(padding: EdgeInsets.all(10.0)),
               // Profile Picture
-              CircleAvatar(
-                radius: 64,
-                backgroundImage: AssetImage('assets/profile_picture.png'),
-                backgroundColor: Colors.grey[300],
+              GestureDetector(
+                onTap: () {
+                  _navigateToAvatarSelection(context);
+                },
+                child: CircleAvatar(
+                  radius: 64,
+                  backgroundImage: AssetImage(_profileImage),
+                  backgroundColor: Colors.grey[300],
+                ),
               ),
               SizedBox(height: 20),
 
@@ -97,7 +111,7 @@ class ProfilePage extends StatelessWidget {
                 },
               ),
               SizedBox(height: 40),
-              // Log Out Button remains unchanged
+              // Log Out Button
               ElevatedButton(
                 onPressed: () async {
                   SharedPreferences prefs = await SharedPreferences.getInstance();
@@ -114,27 +128,23 @@ class ProfilePage extends StatelessWidget {
           ),
         ),
       ),
-      // Add the footer here
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // Ensures all icons are always visible
-        currentIndex: 3, // Set the default active item
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 3,
         onTap: (index) {
-          // Handle navigation based on the selected item
+          // Handle navigation
           if (index == 3) {
-            // Already on Home
+            // Already on Profile page
           } else if (index == 1) {
-            // Example for navigating to a "Workout" page
             Navigator.pushNamed(context, '/workout');
           } else if (index == 2) {
-            // Example for navigating to a "Leaderboarc" page
             Navigator.pushNamed(context, '/leaderboard');
           } else if (index == 0) {
-            // Example for navigating to a "Profile" page
             Navigator.pushNamed(context, '/home');
           }
         },
-        selectedItemColor: Colors.deepPurple, // Active tab color
-        unselectedItemColor: Colors.black, // Inactive tab color
+        selectedItemColor: Colors.deepPurple,
+        unselectedItemColor: Colors.black,
         showSelectedLabels: true,
         showUnselectedLabels: false,
         items: [
@@ -159,7 +169,7 @@ class ProfilePage extends StatelessWidget {
     );
   }
 
-  // Helper Widget for Profile Options
+  // Profile option helper
   Widget _buildProfileOption(BuildContext context,
       {required IconData icon, required String title, String? subtitle, required VoidCallback onTap}) {
     return ListTile(
@@ -172,5 +182,21 @@ class ProfilePage extends StatelessWidget {
       trailing: Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
     );
+  }
+
+  // Navigate to AvatarSelectionPage and get the selected avatar
+  void _navigateToAvatarSelection(BuildContext context) async {
+    // Wait for the selected avatar image from the AvatarSelectionPage
+    String? selectedAvatar = await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => AvatarSelectionPage()),
+    );
+
+    // If an avatar was selected (not null), update the profile image
+    if (selectedAvatar != null && selectedAvatar.isNotEmpty) {
+      setState(() {
+        _profileImage = selectedAvatar;
+      });
+    }
   }
 }
