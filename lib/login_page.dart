@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:software_engineering_project/flutter_dotenv.dart';
 import 'home_page.dart';
 import 'register_page.dart';
+import 'google_signin_config.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -15,7 +17,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final GoogleSignIn _googleSignIn = GoogleSignIn(
-    clientId: '600859582963-hjasr99uot5fu3brv9fsl60756bp0vg6.apps.googleusercontent.com', // Add your client ID here
+    clientId: GoogleSignInConfig.clientId, // Add your client ID here
   );
 
   // Login with Email & Password

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'firebase_options.dart';
 import 'login_page.dart';
 import 'home_page.dart';
 import 'register_page.dart';
@@ -12,11 +14,16 @@ import 'workout_plan.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // await dotenv.load(fileName: "..env");
+
   await Firebase.initializeApp(
-    options: FirebaseOptions(apiKey: "AIzaSyC2DwyRQ73euQ9jmQwFx4SewisfY6tyH3I",
-        appId: "1:600859582963:android:e769840ff24ef4c034f286",
-        messagingSenderId: "600859582963",
-        projectId: "buddy-quest-cb217")
+    options: const FirebaseOptions(
+      apiKey: FirebaseOptionsConfig.apiKey,
+      appId: FirebaseOptionsConfig.appId,
+      messagingSenderId: FirebaseOptionsConfig.messagingSenderId,
+      projectId: FirebaseOptionsConfig.projectId,
+    ),
   );
   runApp(const MyApp());
 }

@@ -35,8 +35,10 @@ dependencies:
   firebase_core: ^3.8.1
   firebase_auth: ^5.3.4
   google_sign_in: ^6.0.0
+  flutter_dotenv: ^5.0.2
 
-
+assets:
+  - .env
 
 dev_dependencies:
   flutter_test:
