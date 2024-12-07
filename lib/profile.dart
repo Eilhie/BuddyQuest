@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'login_page.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class ProfilePage extends StatelessWidget {
   @override
@@ -93,6 +95,20 @@ class ProfilePage extends StatelessWidget {
                 onTap: () {
                   // Navigate to Help Center
                 },
+              ),
+              SizedBox(height: 40),
+              // Log Out Button remains unchanged
+              ElevatedButton(
+                onPressed: () async {
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('isLoggedIn', false);
+
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => LoginPage()),
+                  );
+                },
+                child: Text('Log Out'),
               ),
             ],
           ),

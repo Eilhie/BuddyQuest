@@ -7,6 +7,7 @@ class WorkoutPlanPage extends StatefulWidget {
 
 class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
   String selectedDay = "Monday"; // Default selected day
+  Map<String, bool> blackedOutExercises = {}; // To track blacked-out state for each exercise
 
   // Map of exercises for each day
   final Map<String, List<String>> dailyExercises = {
@@ -111,40 +112,55 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                 itemCount: dailyExercises[selectedDay]?.length ?? 0,
                 itemBuilder: (context, index) {
                   String exercise = dailyExercises[selectedDay]?[index] ?? "";
+                  bool isBlackedOut = blackedOutExercises[exercise] ?? false;
+
                   return GestureDetector(
                     onTap: () {
-                      // Show Popup on Card Tap
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: Text(exercise),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("3 sets of 15 reps"),
-                                SizedBox(height: 10),
-                                Text("Equipment: None"),
-                                SizedBox(height: 10),
-                                Text("Description: This is a great workout for your core."),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () {
-                                  Navigator.pop(context);
-                                },
-                                child: Text("Close"),
+                      // Prevent popup if the exercise is blacked out
+                      if (!isBlackedOut) {
+                        // Show Popup on Card Tap
+                        showDialog(
+                          context: context,
+                          builder: (BuildContext context) {
+                            return AlertDialog(
+                              title: Text(exercise),
+                              content: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text("3 sets of 15 reps"),
+                                  SizedBox(height: 10),
+                                  Text("Equipment: None"),
+                                  SizedBox(height: 10),
+                                  Text("Description: This is a great workout for your core."),
+                                ],
                               ),
-                            ],
-                          );
-                        },
-                      );
+                              actions: [
+                                TextButton(
+                                  onPressed: () {
+                                    setState(() {
+                                      blackedOutExercises[exercise] = true; // Blackout the current card
+                                    });
+                                    Navigator.pop(context); // Close the dialog
+                                  },
+                                  child: Text("Finish Workout"),
+                                ),
+                                TextButton(
+                                  onPressed: () {
+                                    Navigator.pop(context); // Close the dialog
+                                  },
+                                  child: Text("Close"),
+                                ),
+                              ],
+                            );
+                          },
+                        );
+                      }
                     },
                     child: Card(
                       elevation: 3,
                       margin: EdgeInsets.symmetric(vertical: 8),
+                      color: isBlackedOut ? Colors.black.withOpacity(0.5) : null, // Blackout effect for individual card
                       child: ListTile(
                         leading: Icon(Icons.fitness_center, color: Colors.deepPurple),
                         title: Text(
