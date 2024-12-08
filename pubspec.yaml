@@ -36,6 +36,8 @@ dependencies:
   firebase_auth: ^5.3.4
   google_sign_in: ^6.0.0
   flutter_dotenv: ^5.0.2
+  firebase_database: ^11.2.0
+  cloud_firestore: ^5.5.1
 
 assets:
   - .env

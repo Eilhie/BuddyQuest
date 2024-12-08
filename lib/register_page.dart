@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'calibration_flow.dart';
@@ -20,39 +21,80 @@ class RegisterPage extends StatelessWidget {
     final String confirmPassword = _confirmPasswordController.text.trim();
 
     if (password != confirmPassword) {
-      // Show error if passwords do not match
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Passwords do not match!"),
-        backgroundColor: Colors.red,
-      ));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Passwords do not match!"),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
 
     try {
-      // Create user with email and password
+      // Check if email is already registered
+      final userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (userQuery.docs.isNotEmpty) {
+        // Email already exists in Firestore
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("This email is already registered. Please log in."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Create user with Firebase Authentication
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
       );
+      User? user = userCredential.user;
 
-      // Optionally, update the display name
-      await userCredential.user?.updateDisplayName(fullName);
+      if (user != null) {
+        // Store user data in Firestore
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'fullname': fullName,
+          'email': email,
+          'points': 0, // Default value
+          'workout_type': '', // Default value
+        });
 
-      // Navigate to the next screen (CalibrationPage in this case)
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => CalibrationPage()),
-      );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => CalibrationPage()),
+        );
 
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Account created successfully!"),
-        backgroundColor: Colors.green,
-      ));
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Account created successfully!"),
+          backgroundColor: Colors.green,
+        ));
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        // FirebaseAuth email already exists
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("This email is already in use. Please try logging in."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else {
+        // Handle other FirebaseAuth exceptions
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Failed to create account: ${e.message}"),
+          backgroundColor: Colors.red,
+        ));
+      }
     } catch (e) {
-      // Show error message
+      // Catch any other errors
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Failed to create account: ${e.toString()}"),
+        content: Text("An unexpected error occurred: ${e.toString()}"),
         backgroundColor: Colors.red,
       ));
     }

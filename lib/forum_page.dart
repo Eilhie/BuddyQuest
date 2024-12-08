@@ -1,6 +1,20 @@
 import 'package:flutter/material.dart';
 
-class ForumPage extends StatelessWidget {
+class ForumPage extends StatefulWidget {
+  @override
+  _ForumPageState createState() => _ForumPageState();
+}
+
+class _ForumPageState extends State<ForumPage> {
+  final TextEditingController _postController = TextEditingController();
+  List<String> posts = [
+    "Why am I not gaining more muscle although I eat and exercise a lot? :(",
+    "Anyone else experiencing low energy despite good sleep?",
+    "Struggling to stay consistent with my workout routine, any tips?",
+    "What exercises can I do at home to build strength?",
+    "I feel like I'm not progressing in my workout, any advice?",
+  ]; // Initialize with some sample posts
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -10,7 +24,7 @@ class ForumPage extends StatelessWidget {
           children: [
             SizedBox(height: 20),
             Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween, // Place children on the left and right
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 IconButton(
                   icon: Icon(Icons.arrow_back),
@@ -18,7 +32,8 @@ class ForumPage extends StatelessWidget {
                     Navigator.pop(context);
                   },
                 ),
-                Text('Leaderboard',
+                Text(
+                  'Forum',
                   style: TextStyle(
                     fontSize: 24,
                     fontWeight: FontWeight.bold,
@@ -48,6 +63,7 @@ class ForumPage extends StatelessWidget {
                   SizedBox(width: 12),
                   Expanded(
                     child: TextField(
+                      controller: _postController, // Set controller
                       decoration: InputDecoration(
                         hintText: "What's on your mind?",
                         border: InputBorder.none,
@@ -56,7 +72,7 @@ class ForumPage extends StatelessWidget {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      // Handle Post Action
+                      _handlePostAction(context);
                     },
                     child: Text("Post"),
                     style: ElevatedButton.styleFrom(
@@ -71,11 +87,11 @@ class ForumPage extends StatelessWidget {
             // List of Forum Posts
             Expanded(
               child: ListView.builder(
-                itemCount: 10, // Example: 10 posts
+                itemCount: posts.length, // Dynamically update the number of posts
                 itemBuilder: (context, index) {
                   return Column(
                     children: [
-                      _buildForumCard(),
+                      _buildForumCard(posts[index]), // Pass the post content to the card
                       SizedBox(height: 8),
                     ],
                   );
@@ -85,11 +101,51 @@ class ForumPage extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          // Handle navigation based on the selected item
+          if (index == 3) {
+            Navigator.pushNamed(context, '/leaderboard');
+          } else if (index == 1) {
+            // Example for navigating to a "Workout" page
+            Navigator.pushNamed(context, '/workout');
+          } else if (index == 2) {
+            // Example for navigating to a "Leaderboard" page
+            Navigator.pushNamed(context, '/leaderboard');
+          } else if (index == 0) {
+            // Example for navigating to a "Profile" page
+            Navigator.pushNamed(context, '/home');
+          }
+        },
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.black,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pie_chart),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.fitness_center),
+            label: 'Workout',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.leaderboard),
+            label: 'Leaderboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
 
   // Forum Card Widget
-  Widget _buildForumCard() {
+  Widget _buildForumCard(String postContent) {
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
@@ -125,7 +181,7 @@ class ForumPage extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    "6h ago",
+                    "Just now",
                     style: TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
@@ -144,7 +200,7 @@ class ForumPage extends StatelessWidget {
           ),
           SizedBox(height: 8),
           Text(
-            "Why am I not gaining more muscle although I eat and exercise a lot? :(",
+            postContent,
             style: TextStyle(fontSize: 14, color: Colors.black),
           ),
           SizedBox(height: 12),
@@ -153,11 +209,7 @@ class ForumPage extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  _buildActionIcon(Icons.chat_bubble_outline, "10"),
-                  SizedBox(width: 16),
                   _buildActionIcon(Icons.thumb_up_alt_outlined, "10"),
-                  SizedBox(width: 16),
-                  _buildActionIcon(Icons.thumb_down_alt_outlined, "10"),
                 ],
               ),
             ],
@@ -188,7 +240,73 @@ class ForumPage extends StatelessWidget {
           count,
           style: TextStyle(fontSize: 12, color: Colors.grey[700]),
         ),
+        SizedBox(width: 6),
+        Text(
+          "Likes",
+          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+        ),
       ],
+    );
+  }
+
+  // Handle Post Action
+  void _handlePostAction(BuildContext context) {
+    String postContent = _postController.text.trim();
+
+    if (postContent.isEmpty) {
+      // Show validation error if post is empty
+      _showErrorDialog(context);
+    } else {
+      setState(() {
+        // Add the new post to the top of the list
+        posts.insert(0, postContent);
+      });
+
+      // Show success dialog if post is valid
+      _showPostSuccessDialog(context);
+      _postController.clear(); // Clear the input after posting
+    }
+  }
+
+  // Show Success Dialog
+  void _showPostSuccessDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Post Successful"),
+          content: Text("Your post has been successfully submitted!"),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: Text("OK"),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Show Error Dialog for empty post
+  void _showErrorDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Error"),
+          content: Text("Please enter some text before posting."),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context); // Close the dialog
+              },
+              child: Text("OK"),
+            ),
+          ],
+        );
+      },
     );
   }
 }
