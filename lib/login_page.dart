@@ -26,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
   // Login with Email & Password
   Future<void> _signInWithEmailPassword() async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
