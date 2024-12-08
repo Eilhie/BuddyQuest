@@ -1,19 +1,29 @@
+
 import 'package:flutter/material.dart';
 
 class AvatarSelectionPage extends StatelessWidget {
   final List<String> avatarImages = [
-    'assets/avatar1.png',
-    'assets/avatar2.png',
-    'assets/avatar3.png',
-    'assets/avatar4.png',
-    'assets/avatar5.png',
-    'assets/avatar6.png',
-    'assets/avatar7.png',
-    'assets/avatar8.png',
-    'assets/avatar9.png',
-    'assets/avatar10.png',
-    'assets/avatar11.png',
-    'assets/avatar12.png',
+    'assets/profiles/boy_2945312.png',
+    'assets/profiles/boy_2945483.png',
+    'assets/profiles/boy_2945493.png',
+    'assets/profiles/boy_2945506.png',
+    'assets/profiles/boy_2945508.png',
+    'assets/profiles/boy_9240480.png',
+    'assets/profiles/cowgirl_9240504.png',
+    'assets/profiles/girl_2945402.png',
+    'assets/profiles/girl_2945416.png',
+    'assets/profiles/girl_2945473.png',
+    'assets/profiles/girl_2945476.png',
+    'assets/profiles/girl_2945504.png',
+    'assets/profiles/girl_2945516.png',
+    'assets/profiles/man_9240527.png',
+    'assets/profiles/queen_9240477.png',
+    'assets/profiles/student_8245264.png',
+    'assets/profiles/student_8245299.png',
+    'assets/profiles/student_8245381.png',
+    'assets/profiles/student_8245427.png',
+    'assets/profiles/woman_9240481.png',
+    'assets/profiles/woman_9240535.png'
   ];
 
   @override
