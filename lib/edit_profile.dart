@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class EditProfilePage extends StatelessWidget {
   final TextEditingController _usernameController = TextEditingController();
@@ -25,7 +27,7 @@ class EditProfilePage extends StatelessWidget {
                       Navigator.pop(context);
                     },
                   ),
-                  Text(
+                  const Text(
                     'Edit Profile',
                     style: TextStyle(
                       fontSize: 24,
@@ -35,29 +37,56 @@ class EditProfilePage extends StatelessWidget {
                   IconButton(
                     icon: Icon(Icons.settings),
                     onPressed: () {
-                      // Navigate to Settings Page
                       ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Settings button pressed')),
+                        const SnackBar(content: Text('Settings button pressed')),
                       );
                     },
                   ),
                 ],
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Profile Picture Section
               CircleAvatar(
                 radius: 64,
-                backgroundImage: AssetImage('assets/profile_picture.png'),
+                backgroundImage: const AssetImage('assets/profile_picture.png'),
                 backgroundColor: Colors.grey[300],
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
               // Username Input Field
-              _buildInputField(
-                title: 'Username',
-                controller: _usernameController,
-                hintText: '@username',
+              FutureBuilder<DocumentSnapshot>(
+                future: _getCurrentUserProfile(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return _buildInputField(
+                      title: 'Username',
+                      controller: _usernameController,
+                      hintText: 'Loading...',
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return _buildInputField(
+                      title: 'Username',
+                      controller: _usernameController,
+                      hintText: '@username',
+                    );
+                  }
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+                    final fullname = data['fullname'] ?? '@username';
+                    return _buildInputField(
+                      title: 'Username',
+                      controller: _usernameController,
+                      hintText: fullname,
+                    );
+                  }
+                  return _buildInputField(
+                    title: 'Username',
+                    controller: _usernameController,
+                    hintText: '@username',
+                  );
+                },
               ),
 
               // Location Input Field
@@ -75,24 +104,50 @@ class EditProfilePage extends StatelessWidget {
               ),
 
               // Save Changes Button
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               SizedBox(
-                width: double.infinity, // Makes the button full width
+                width: double.infinity,
                 child: ElevatedButton(
                   onPressed: () async {
-                    // Add save changes functionality here
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text('Changes saved!')),
-                    );
+                    try {
+                      final currentUser = FirebaseAuth.instance.currentUser;
+                      if (currentUser != null) {
+                        String uid = currentUser.uid;
+                        String fullname = _usernameController.text.trim();
+
+                        if (fullname.isNotEmpty) {
+                          await FirebaseFirestore.instance
+                              .collection('users')
+                              .doc(uid)
+                              .update({'fullname': fullname});
+
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Changes saved!')),
+                          );
+                        } else {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Full name cannot be empty!')),
+                          );
+                        }
+                      } else {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('User not logged in!')),
+                        );
+                      }
+                    } catch (e) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Error: $e')),
+                      );
+                    }
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Color(0x99FFFAFA), // Button color
-                    padding: EdgeInsets.symmetric(vertical: 16), // Add vertical padding for button height
+                    backgroundColor: Color(0x99FFFAFA),
+                    padding: EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(24),
                     ),
                   ),
-                  child: Text(
+                  child: const Text(
                     'Save Changes',
                     style: TextStyle(
                       fontWeight: FontWeight.bold,
@@ -110,9 +165,8 @@ class EditProfilePage extends StatelessWidget {
       // Footer Navigation
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: 3, // Set the Profile page as active
+        currentIndex: 3,
         onTap: (index) {
-          // Handle navigation logic
           switch (index) {
             case 0:
               Navigator.pushNamed(context, '/home');
@@ -152,6 +206,15 @@ class EditProfilePage extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Future<DocumentSnapshot> _getCurrentUserProfile() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      return FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+    } else {
+      throw Exception('User not logged in');
+    }
   }
 
   // Helper Widget for Input Fields
