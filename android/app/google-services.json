@@ -8,35 +8,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:600859582963:android:b1cf7fdf4bdd137934f286",
-        "android_client_info": {
-          "package_name": "com.eilhie.software_enginee"
-        }
-      },
-      "oauth_client": [
-        {
-          "client_id": "600859582963-hjasr99uot5fu3brv9fsl60756bp0vg6.apps.googleusercontent.com",
-          "client_type": 3
-        }
-      ],
-      "api_key": [
-        {
-          "current_key": "AIzaSyC2DwyRQ73euQ9jmQwFx4SewisfY6tyH3I"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": [
-            {
-              "client_id": "600859582963-hjasr99uot5fu3brv9fsl60756bp0vg6.apps.googleusercontent.com",
-              "client_type": 3
-            }
-          ]
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:600859582963:android:e769840ff24ef4c034f286",
         "android_client_info": {
           "package_name": "com.eilhie.software_engineering_project"
@@ -44,6 +15,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "600859582963-eebffm2l6tfnp4dkluqd7l0d3chl0idj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.eilhie.software_engineering_project",
+            "certificate_hash": "48adfc4be3d2f3e6755342f1d587c6b9fe36affc"
+          }
+        },
+        {
           "client_id": "600859582963-hjasr99uot5fu3brv9fsl60756bp0vg6.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -59,6 +38,13 @@
             {
               "client_id": "600859582963-hjasr99uot5fu3brv9fsl60756bp0vg6.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "600859582963-m1rsm81skqbet07hjah3riaamimih47i.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.eilhie.softwareEngineeringProject"
+              }
             }
           ]
         }
