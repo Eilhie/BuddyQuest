@@ -1,10 +1,51 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'login_page.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'forum_page.dart'; // Add import for Forum Page
 
-class HomePage extends StatelessWidget {
+class HomePage extends StatefulWidget {
+  @override
+  _HomePageState createState() => _HomePageState();
+}
+
+class _HomePageState extends State<HomePage> {
+  String _userFirstName = "Guest"; // Default value
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserFirstName();
+  }
+
+  // Load the user's first name from Firebase
+  Future<void> _loadUserFirstName() async {
+    try {
+      final User? user = _auth.currentUser;
+      if (user != null) {
+        String uid = user.uid;
+        // Access get the user full name
+        DocumentSnapshot userDoc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(uid)
+            .get();
+
+        if (userDoc.exists) {
+          String fullname = userDoc['fullname'] ?? 'Guest';
+          setState(() {
+            _userFirstName = fullname.split(' ').first;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error fetching user data: $e');
+      setState(() {
+        _userFirstName = "Guest";
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -14,8 +55,8 @@ class HomePage extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SizedBox(height: 40),
-              Text(
+              const SizedBox(height: 40),
+              const Text(
                 "EVERY DAY WE MUSCLE'N",
                 style: TextStyle(
                   fontSize: 12,
@@ -24,15 +65,15 @@ class HomePage extends StatelessWidget {
                 ),
               ),
               Text(
-                "Hello, CORNELIUS",
-                style: TextStyle(
+                "Hey, $_userFirstName",
+                style: const TextStyle(
                   fontSize: 28,
                   fontWeight: FontWeight.bold,
                   color: Colors.black,
                 ),
               ),
-              SizedBox(height: 30),
-              Text(
+              const SizedBox(height: 30),
+              const Text(
                 "Today's Plan",
                 style: TextStyle(
                   fontSize: 24,
@@ -40,10 +81,8 @@ class HomePage extends StatelessWidget {
                   color: Colors.black,
                 ),
               ),
-              SizedBox(height: 100),
-
-              // Other sections like "This Week" and "Hours" remain unchanged
-              Row(
+              const SizedBox(height: 100),
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
@@ -57,8 +96,8 @@ class HomePage extends StatelessWidget {
                   Text('4/7 days'),
                 ],
               ),
-              SizedBox(height: 100),
-              Row(
+              const SizedBox(height: 100),
+              const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
@@ -72,10 +111,8 @@ class HomePage extends StatelessWidget {
                   Text('20 Hours'),
                 ],
               ),
-              SizedBox(height: 150),
-
-              // Latest Forum Section
-              Text(
+              const SizedBox(height: 150),
+              const Text(
                 "Latest Forum",
                 style: TextStyle(
                   fontSize: 24,
@@ -83,9 +120,7 @@ class HomePage extends StatelessWidget {
                   color: Colors.black,
                 ),
               ),
-              SizedBox(height: 16),
-
-              // Modified Forum Section
+              const SizedBox(height: 16),
               Container(
                 padding: const EdgeInsets.all(16.0),
                 decoration: BoxDecoration(
@@ -98,16 +133,14 @@ class HomePage extends StatelessWidget {
                     SizedBox(height: 8),
                     _buildForumCard(),
                     SizedBox(height: 8),
-                    // "See More" Button
                     TextButton(
                       onPressed: () {
-                        // Navigate to Forum Page
                         Navigator.push(
                           context,
                           MaterialPageRoute(builder: (context) => ForumPage()),
                         );
                       },
-                      child: Text(
+                      child: const Text(
                         "See More",
                         style: TextStyle(
                           color: Colors.blue,
@@ -122,8 +155,6 @@ class HomePage extends StatelessWidget {
           ),
         ),
       ),
-
-      // Bottom Navigation Bar remains unchanged
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: 0,
@@ -142,7 +173,7 @@ class HomePage extends StatelessWidget {
         unselectedItemColor: Colors.black,
         showSelectedLabels: true,
         showUnselectedLabels: false,
-        items: [
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.pie_chart),
             label: 'Home',
@@ -164,21 +195,12 @@ class HomePage extends StatelessWidget {
     );
   }
 
-  // Forum Card Widget (Modified)
   Widget _buildForumCard() {
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8.0),
         color: Colors.grey.withOpacity(0.1),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.white,
-            blurRadius: 4,
-            spreadRadius: 2,
-            offset: Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,16 +228,6 @@ class HomePage extends StatelessWidget {
                   ),
                 ],
               ),
-              Spacer(),
-              TextButton(
-                onPressed: () {
-                  // Follow action
-                },
-                child: Text(
-                  "Follow",
-                  style: TextStyle(color: Colors.purple),
-                ),
-              ),
             ],
           ),
           SizedBox(height: 8),
@@ -223,48 +235,8 @@ class HomePage extends StatelessWidget {
             "Why am I not gaining more muscle although I eat and exercise a lot? :(",
             style: TextStyle(fontSize: 14, color: Colors.black),
           ),
-          SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  _buildActionIcon(Icons.chat_bubble_outline, "10"),
-                  SizedBox(width: 16),
-                  _buildActionIcon(Icons.thumb_up_alt_outlined, "10"),
-                  SizedBox(width: 16),
-                  _buildActionIcon(Icons.thumb_down_alt_outlined, "10"),
-                ],
-              ),
-            ],
-          ),
         ],
       ),
-    );
-  }
-
-  // Action Icon Widget
-  Widget _buildActionIcon(IconData icon, String count) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6.0),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.grey[300],
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: Colors.grey[700],
-          ),
-        ),
-        SizedBox(width: 6),
-        Text(
-          count,
-          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-        ),
-      ],
     );
   }
 }
