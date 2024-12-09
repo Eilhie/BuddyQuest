@@ -1,15 +1,30 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'avatar_selection_page.dart'; // Import the new page
+import 'avatar_selection_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProfilePage extends StatefulWidget {
+  const ProfilePage({super.key});
+
   @override
   _ProfilePageState createState() => _ProfilePageState();
 }
 
 class _ProfilePageState extends State<ProfilePage> {
   String _profileImage = 'assets/profile_picture.png'; // Default profile image
+
+  Future<String> _getUserFullName() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+      if (doc.exists) {
+        return doc.data()?['fullname'] ?? '@username';
+      }
+    }
+    return '@username'; // Default value if no user or fullname found
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -20,17 +35,17 @@ class _ProfilePageState extends State<ProfilePage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.arrow_back),
+                    icon: const Icon(Icons.arrow_back),
                     onPressed: () {
                       Navigator.pop(context);
                     },
                   ),
-                  Text(
+                  const Text(
                     'Profile',
                     style: TextStyle(
                       fontSize: 24,
@@ -38,14 +53,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(Icons.settings),
+                    icon: const Icon(Icons.settings),
                     onPressed: () {
                       // Navigate to Settings Page or Open Settings
                     },
                   ),
                 ],
               ),
-              Padding(padding: EdgeInsets.all(10.0)),
+              const Padding(padding: EdgeInsets.all(10.0)),
               // Profile Picture
               GestureDetector(
                 onTap: () {
@@ -57,18 +72,32 @@ class _ProfilePageState extends State<ProfilePage> {
                   backgroundColor: Colors.grey[300],
                 ),
               ),
-              SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-              // Profile Options
-              _buildProfileOption(
-                context,
-                icon: Icons.person_outline,
-                title: '@username',
-                subtitle: 'Tap to edit User Info',
-                onTap: () {
-                  Navigator.pushNamed(context, '/editProfile');
+              // Profile Options with dynamic @username
+              FutureBuilder<String>(
+                future: _getUserFullName(),
+                builder: (context, snapshot) {
+                  String fullname = '@username';
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    fullname = 'Loading...';
+                  } else if (snapshot.hasError) {
+                    fullname = '@username';
+                  } else if (snapshot.hasData) {
+                    fullname = snapshot.data!;
+                  }
+                  return _buildProfileOption(
+                    context,
+                    icon: Icons.person_outline,
+                    title: fullname,
+                    subtitle: 'Tap to edit User Info',
+                    onTap: () {
+                      Navigator.pushNamed(context, '/editProfile');
+                    },
+                  );
                 },
               ),
+
               _buildProfileOption(
                 context,
                 icon: Icons.fitness_center,
@@ -110,7 +139,7 @@ class _ProfilePageState extends State<ProfilePage> {
                   // Navigate to Help Center
                 },
               ),
-              SizedBox(height: 40),
+              const SizedBox(height: 40),
               // Log Out Button
               ElevatedButton(
                 onPressed: () async {
@@ -122,7 +151,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     MaterialPageRoute(builder: (context) => LoginPage()),
                   );
                 },
-                child: Text('Log Out'),
+                child: const Text('Log Out'),
               ),
             ],
           ),
@@ -147,7 +176,7 @@ class _ProfilePageState extends State<ProfilePage> {
         unselectedItemColor: Colors.black,
         showSelectedLabels: true,
         showUnselectedLabels: false,
-        items: [
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.pie_chart),
             label: 'Home',
@@ -179,20 +208,18 @@ class _ProfilePageState extends State<ProfilePage> {
       ),
       title: Text(title),
       subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: Icon(Icons.arrow_forward_ios, size: 16),
+      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
       onTap: onTap,
     );
   }
 
   // Navigate to AvatarSelectionPage and get the selected avatar
   void _navigateToAvatarSelection(BuildContext context) async {
-    // Wait for the selected avatar image from the AvatarSelectionPage
     String? selectedAvatar = await Navigator.push(
       context,
       MaterialPageRoute(builder: (context) => AvatarSelectionPage()),
     );
 
-    // If an avatar was selected (not null), update the profile image
     if (selectedAvatar != null && selectedAvatar.isNotEmpty) {
       setState(() {
         _profileImage = selectedAvatar;
