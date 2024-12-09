@@ -24,6 +24,7 @@ android {
     defaultConfig {
         applicationId = "com.eilhie.software_engineering_project"
         minSdk = flutter.minSdkVersion
+        minSdkVersion 23 //added
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
