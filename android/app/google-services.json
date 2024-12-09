@@ -1,6 +1,7 @@
 {
   "project_info": {
     "project_number": "600859582963",
+    "firebase_url": "https://buddy-quest-cb217-default-rtdb.asia-southeast1.firebasedatabase.app",
     "project_id": "buddy-quest-cb217",
     "storage_bucket": "buddy-quest-cb217.firebasestorage.app"
   },
@@ -13,6 +14,14 @@
         }
       },
       "oauth_client": [
+        {
+          "client_id": "600859582963-eebffm2l6tfnp4dkluqd7l0d3chl0idj.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.eilhie.software_engineering_project",
+            "certificate_hash": "48adfc4be3d2f3e6755342f1d587c6b9fe36affc"
+          }
+        },
         {
           "client_id": "600859582963-hjasr99uot5fu3brv9fsl60756bp0vg6.apps.googleusercontent.com",
           "client_type": 3
@@ -29,6 +38,13 @@
             {
               "client_id": "600859582963-hjasr99uot5fu3brv9fsl60756bp0vg6.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "600859582963-m1rsm81skqbet07hjah3riaamimih47i.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.eilhie.softwareEngineeringProject"
+              }
             }
           ]
         }
