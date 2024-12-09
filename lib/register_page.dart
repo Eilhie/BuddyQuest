@@ -1,62 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'login_page.dart'; // Make sure to import the login page
 import 'calibration_flow.dart';
-import 'login_page.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
+  @override
+  _RegisterPageState createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance; // FirebaseAuth instance
-
-  RegisterPage({super.key});
-
-  Future<void> _registerUser(BuildContext context) async {
-    final String fullName = _fullNameController.text.trim();
-    final String email = _emailController.text.trim();
-    final String password = _passwordController.text.trim();
-    final String confirmPassword = _confirmPasswordController.text.trim();
-
-    if (password != confirmPassword) {
-      // Show error if passwords do not match
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Passwords do not match!"),
-        backgroundColor: Colors.red,
-      ));
-      return;
-    }
-
-    try {
-      // Create user with email and password
-      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
-      // Optionally, update the display name
-      await userCredential.user?.updateDisplayName(fullName);
-
-      // Navigate to the next screen (CalibrationPage in this case)
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => CalibrationPage()),
-      );
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
-        content: Text("Account created successfully!"),
-        backgroundColor: Colors.green,
-      ));
-    } catch (e) {
-      // Show error message
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-        content: Text("Failed to create account: ${e.toString()}"),
-        backgroundColor: Colors.red,
-      ));
-    }
-  }
+  bool _isPasswordHidden = true;
+  bool _isConfirmPasswordHidden = true;
 
   @override
   Widget build(BuildContext context) {
@@ -66,121 +25,172 @@ class RegisterPage extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Padding(padding: EdgeInsets.all(30.0)),
-            const Text(
+            Padding(padding: EdgeInsets.all(30.0)),
+            Text(
               'Create Your Account',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            const SizedBox(height: 30),
-            const Text(
-              "Fullname",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextField(
+            SizedBox(height: 30),
+            _buildLabel('Fullname'),
+            _buildTextField(
               controller: _fullNameController,
-              decoration: const InputDecoration(
-                hintText: 'Enter your fullname',
-                hintStyle: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16.0,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+              hintText: 'Enter your fullname',
             ),
-            const Padding(padding: EdgeInsets.all(10.0)),
-            const Text(
-              "Email",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextField(
+            SizedBox(height: 10),
+            _buildLabel('Email'),
+            _buildTextField(
               controller: _emailController,
-              decoration: const InputDecoration(
-                hintText: 'Enter your email',
-                hintStyle: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16.0,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+              hintText: 'Enter your email',
             ),
-            const Padding(padding: EdgeInsets.all(10.0)),
-            const Text(
-              "Password",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextField(
+            SizedBox(height: 10),
+            _buildLabel('Password'),
+            _buildPasswordField(
               controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                hintText: 'Enter your password',
-                hintStyle: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16.0,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+              hintText: 'Enter your password',
+              isHidden: _isPasswordHidden,
+              onVisibilityToggle: () {
+                setState(() {
+                  _isPasswordHidden = !_isPasswordHidden;
+                });
+              },
             ),
-            const Padding(padding: EdgeInsets.all(10.0)),
-            const Text(
-              "Confirm Password",
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            TextField(
+            SizedBox(height: 10),
+            _buildLabel('Confirm Password'),
+            _buildPasswordField(
               controller: _confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                hintText: 'Confirm your Password',
-                hintStyle: TextStyle(
-                  color: Colors.grey,
-                  fontSize: 16.0,
-                  fontStyle: FontStyle.italic,
-                ),
-              ),
+              hintText: 'Confirm your password',
+              isHidden: _isConfirmPasswordHidden,
+              onVisibilityToggle: () {
+                setState(() {
+                  _isConfirmPasswordHidden = !_isConfirmPasswordHidden;
+                });
+              },
             ),
-            const SizedBox(height: 30),
+            SizedBox(height: 20),
             ElevatedButton(
-              onPressed: () => _registerUser(context), // Call the Firebase registration logic
+              onPressed: () async {
+                // Dummy registration action
+                if (_passwordController.text == _confirmPasswordController.text) {
+                  SharedPreferences prefs = await SharedPreferences.getInstance();
+                  await prefs.setBool('isLoggedIn', true);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => CalibrationPage()),
+                  );
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text("Passwords do not match!"),
+                      backgroundColor: Colors.red,
+                    ),
+                  );
+                }
+              },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0x9954473F),
-                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                backgroundColor: Color(0x9954473F),
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                minimumSize: const Size(double.infinity, 60),
+                minimumSize: Size(double.infinity, 60),
               ),
-              child: const Text('SIGN UP',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              child: Text(
+                'SIGN UP',
+                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+              ),
             ),
-            const SizedBox(height: 20),
+            SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: () {
+                // Placeholder for Google Sign-In logic
+              },
+              icon: Image.network(
+                'https://www.google.com/favicon.ico',
+                width: 24,
+                height: 24,
+                fit: BoxFit.contain,
+              ),
+              label: Text('Sign Up with Google'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent, // Google button blue
+                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: Size(double.infinity, 60),
+              ),
+            ),
+            SizedBox(height: 20),
             TextButton(
               onPressed: () {
-                // Navigate to the Login page
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => LoginPage()),
                 );
               },
-              child: const Text(
+              child: Text(
                 'Already have an account? Sign In',
                 style: TextStyle(color: Colors.blue),
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  // Helper for labels
+  Widget _buildLabel(String text) {
+    return Text(
+      text,
+      style: TextStyle(
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+  }
+
+  // Helper for text fields
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String hintText,
+  }) {
+    return TextField(
+      controller: controller,
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(
+          color: Colors.grey,
+          fontSize: 16.0,
+          fontStyle: FontStyle.italic,
+        ),
+      ),
+    );
+  }
+
+  // Helper for password fields
+  Widget _buildPasswordField({
+    required TextEditingController controller,
+    required String hintText,
+    required bool isHidden,
+    required VoidCallback onVisibilityToggle,
+  }) {
+    return TextField(
+      controller: controller,
+      obscureText: isHidden,
+      decoration: InputDecoration(
+        hintText: hintText,
+        hintStyle: TextStyle(
+          color: Colors.grey,
+          fontSize: 16.0,
+          fontStyle: FontStyle.italic,
+        ),
+        suffixIcon: IconButton(
+          icon: Icon(isHidden ? Icons.visibility_off : Icons.visibility),
+          onPressed: onVisibilityToggle,
         ),
       ),
     );
