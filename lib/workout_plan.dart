@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'setting_page.dart';
 
 class WorkoutPlanPage extends StatefulWidget {
   @override
@@ -48,9 +49,15 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.settings),
+                  icon: const Icon(Icons.settings),
                   onPressed: () {
                     // Navigate to Settings Page or Open Settings
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SettingsPage(), // Navigate to the ReplyPage
+                      ),
+                    );
                   },
                 ),
               ],

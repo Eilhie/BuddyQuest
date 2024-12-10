@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'reply_page.dart';
+import 'setting_page.dart';
 
 class ForumPage extends StatefulWidget {
   @override
@@ -113,9 +114,15 @@ class _ForumPageState extends State<ForumPage> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.settings),
+                  icon: const Icon(Icons.settings),
                   onPressed: () {
                     // Navigate to Settings Page or Open Settings
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SettingsPage(), // Navigate to the ReplyPage
+                      ),
+                    );
                   },
                 ),
               ],

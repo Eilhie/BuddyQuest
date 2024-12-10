@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'avatar_selection_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'setting_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -80,6 +81,12 @@ class _ProfilePageState extends State<ProfilePage> {
                     icon: const Icon(Icons.settings),
                     onPressed: () {
                       // Navigate to Settings Page or Open Settings
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => SettingsPage(), // Navigate to the ReplyPage
+                        ),
+                      );
                     },
                   ),
                 ],
