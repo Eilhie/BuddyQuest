@@ -9,6 +9,7 @@ class ForumPage extends StatefulWidget {
 
 class _ForumPageState extends State<ForumPage> {
   final TextEditingController _postController = TextEditingController();
+
   String? currentUserName; // Store the current user's name
 
   @override
@@ -66,6 +67,7 @@ class _ForumPageState extends State<ForumPage> {
                   },
                 ),
                 const Text(
+
                   'Forum',
                   style: TextStyle(
                     fontSize: 24,
@@ -98,6 +100,7 @@ class _ForumPageState extends State<ForumPage> {
                     child: TextField(
                       controller: _postController, // Set controller
                       decoration: const InputDecoration(
+
                         hintText: "What's on your mind?",
                         border: InputBorder.none,
                       ),
@@ -144,6 +147,7 @@ class _ForumPageState extends State<ForumPage> {
                         ],
                       );
                     },
+
                   );
                 },
               ),
@@ -162,6 +166,7 @@ class _ForumPageState extends State<ForumPage> {
           } else if (index == 2) {
             Navigator.pushNamed(context, '/leaderboard');
           } else if (index == 0) {
+
             Navigator.pushNamed(context, '/home');
           }
         },
@@ -295,6 +300,7 @@ class _ForumPageState extends State<ForumPage> {
         return AlertDialog(
           title: const Text("Error"),
           content: Text(message),
+
           actions: [
             TextButton(
               onPressed: () {
@@ -308,3 +314,4 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 }
+

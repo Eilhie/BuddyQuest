@@ -1,10 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
 import 'calibration_flow.dart';
 import 'login_page.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
+  @override
+  _RegisterPageState createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -101,6 +108,7 @@ class RegisterPage extends StatelessWidget {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -143,9 +151,13 @@ class RegisterPage extends StatelessWidget {
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
+
             ),
-            TextField(
+            SizedBox(height: 10),
+            _buildLabel('Email'),
+            _buildTextField(
               controller: _emailController,
+
               decoration: const InputDecoration(
                 hintText: 'Enter your email',
                 hintStyle: TextStyle(
@@ -182,8 +194,11 @@ class RegisterPage extends StatelessWidget {
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
+
             ),
-            TextField(
+            SizedBox(height: 10),
+            _buildLabel('Confirm Password'),
+            _buildPasswordField(
               controller: _confirmPasswordController,
               obscureText: true,
               decoration: const InputDecoration(
@@ -208,11 +223,11 @@ class RegisterPage extends StatelessWidget {
               ),
               child: const Text('SIGN UP',
                   style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+
             ),
             const SizedBox(height: 20),
             TextButton(
               onPressed: () {
-                // Navigate to the Login page
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => LoginPage()),

@@ -98,6 +98,7 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -116,6 +117,7 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 30),
             const Text(
+
               "Email",
               style: TextStyle(
                 fontSize: 18,
@@ -140,6 +142,7 @@ class _LoginPageState extends State<LoginPage> {
               controller: _passwordController,
               decoration: const InputDecoration(
                 hintText: 'Enter your password',
+
               ),
             ),
             const SizedBox(height: 30),
@@ -168,6 +171,7 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 minimumSize: const Size(double.infinity, 60),
               ),
+
             ),
             const SizedBox(height: 20),
             TextButton(

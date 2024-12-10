@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import 'avatar_selection_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -47,6 +48,7 @@ class _ProfilePageState extends State<ProfilePage> {
     return 'Guest'; // Default value if no user or fullname found
   }
 
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,6 +69,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                   ),
                   const Text(
+
                     'Profile',
                     style: TextStyle(
                       fontSize: 24,
@@ -161,6 +164,7 @@ class _ProfilePageState extends State<ProfilePage> {
                 },
               ),
               const SizedBox(height: 40),
+
               // Log Out Button
               ElevatedButton(
                 onPressed: () async {
@@ -241,9 +245,11 @@ class _ProfilePageState extends State<ProfilePage> {
       MaterialPageRoute(builder: (context) => AvatarSelectionPage()),
     );
 
+
     if (selectedAvatar != null && selectedAvatar.isNotEmpty) {
       setState(() {
         _profileImage = 'assets/profiles/$selectedAvatar';
+
       });
     }
   }

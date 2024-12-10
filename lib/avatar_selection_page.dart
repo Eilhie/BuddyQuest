@@ -1,9 +1,11 @@
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class AvatarSelectionPage extends StatelessWidget {
   final List<String> avatarImages = [
+
     'assets/profiles/boy-default.png',
     'assets/profiles/boy-2.png',
     'assets/profiles/boy-3.png',
