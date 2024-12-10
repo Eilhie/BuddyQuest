@@ -41,3 +41,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# security
+.env
+lib\firebase_options.dart
+lib/google_signin_config.dart

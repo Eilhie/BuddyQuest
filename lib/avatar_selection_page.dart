@@ -1,19 +1,31 @@
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class AvatarSelectionPage extends StatelessWidget {
   final List<String> avatarImages = [
-    'assets/avatar1.png',
-    'assets/avatar2.png',
-    'assets/avatar3.png',
-    'assets/avatar4.png',
-    'assets/avatar5.png',
-    'assets/avatar6.png',
-    'assets/avatar7.png',
-    'assets/avatar8.png',
-    'assets/avatar9.png',
-    'assets/avatar10.png',
-    'assets/avatar11.png',
-    'assets/avatar12.png',
+
+    'assets/profiles/boy-default.png',
+    'assets/profiles/boy-2.png',
+    'assets/profiles/boy-3.png',
+    'assets/profiles/boy-4.png',
+    'assets/profiles/boy-5.png',
+    'assets/profiles/boy-6.png',
+    'assets/profiles/boy-7.png',
+    'assets/profiles/boy-8.png',
+    'assets/profiles/boy-9.png',
+    'assets/profiles/boy-10.png',
+    'assets/profiles/girl-default.png',
+    'assets/profiles/girl-2.png',
+    'assets/profiles/girl-3.png',
+    'assets/profiles/girl-4.png',
+    'assets/profiles/girl-5.png',
+    'assets/profiles/girl-6.png',
+    'assets/profiles/girl-7.png',
+    'assets/profiles/girl-8.png',
+    'assets/profiles/girl-9.png',
+    'assets/profiles/girl-10.png'
   ];
 
   @override
@@ -106,10 +118,39 @@ class AvatarSelectionPage extends StatelessWidget {
           ),
           actions: [
             TextButton(
-              onPressed: () {
-                // Navigate back to Profile Page and pass the selected avatar
-                Navigator.pop(context); // Close the confirmation dialog
-                Navigator.pop(context, selectedAvatar); // Navigate back with the selected avatar
+              onPressed: () async {
+                try {
+                  final currentUser = FirebaseAuth.instance.currentUser;
+                  if (currentUser != null) {
+                    String uid = currentUser.uid;
+
+                    // Extract the filename from the selectedAvatar string
+                    String avatarFilename = selectedAvatar.split('/').last;
+
+                    await FirebaseFirestore.instance
+                        .collection('users')
+                        .doc(uid)
+                        .update({'avatar': avatarFilename});
+
+                    // Navigate back to Profile Page and pass the selected avatar
+                    Navigator.pop(context); // Close the confirmation dialog
+                    Navigator.pop(context, avatarFilename); // Navigate back with the avatar filename
+
+                    // Show a success message
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Avatar updated successfully!'),
+                      ),
+                    );
+                  }
+                } catch (error) {
+                  // Handle errors, e.g., display an error message
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text('Error updating avatar: $error'),
+                    ),
+                  );
+                }
               },
               child: Text('Confirm'),
             ),

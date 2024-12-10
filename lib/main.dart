@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'login_page.dart';
 import 'home_page.dart';
 import 'register_page.dart';
@@ -9,12 +11,23 @@ import 'leaderboard.dart';
 import 'calibration_flow.dart';
 import 'workout_plan.dart';
 
-void main() {
+Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(MyApp());
+
+  await Firebase.initializeApp(
+    options: const FirebaseOptions(
+      apiKey: FirebaseOptionsConfig.apiKey,
+      appId: FirebaseOptionsConfig.appId,
+      messagingSenderId: FirebaseOptionsConfig.messagingSenderId,
+      projectId: FirebaseOptionsConfig.projectId,
+    ),
+  );
+  runApp(const MyApp());
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -23,7 +36,7 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         primarySwatch: Colors.blue,
       ),
-      home: RootScreen(), // Root logic
+      home: RootScreen(),
       routes: {
         '/home': (context) => HomePage(),
         '/login': (context) => LoginPage(),

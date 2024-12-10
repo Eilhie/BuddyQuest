@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'home_page.dart';
 import 'register_page.dart';
+import 'google_signin_config.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -11,7 +15,89 @@ class LoginPage extends StatefulWidget {
 class _LoginPageState extends State<LoginPage> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
-  bool _isPasswordVisible = false;
+  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final GoogleSignIn _googleSignIn = GoogleSignIn(
+    clientId: GoogleSignInConfig.clientId, // Add your client ID here
+  );
+
+  // Initialize FirebaseFirestore
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Login with Email & Password
+  Future<void> _signInWithEmailPassword() async {
+    try {
+      await _auth.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+      );
+
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    } catch (e) {
+      print('Error during sign-in: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to sign in. Please try again.')),
+      );
+    }
+  }
+
+  // Login with Google
+  Future<void> _signInWithGoogle() async {
+    try {
+      GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
+      GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
+
+      AuthCredential credential = GoogleAuthProvider.credential(
+        accessToken: googleAuth.accessToken,
+        idToken: googleAuth.idToken,
+      );
+
+      UserCredential userCredential = await _auth.signInWithCredential(credential);
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // Check if user data already exists
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+        if (!userDoc.exists) {
+          // Store user data only if it's a new user
+          await _firestore.collection('users').doc(user.uid).set({
+            'uid': user.uid,
+            'fullname': user.displayName ?? '',
+            'email': user.email,
+            'points': 0, // Default value
+            'workout_type': '', // Default value
+            'avatar': 'boy-default',
+          }).catchError((error) {
+            print('Error storing user data: $error');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Sign-in failed. Please try again.')),
+            );
+          });
+        }
+      }
+
+      // Navigate to home page
+      SharedPreferences prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('isLoggedIn', true);
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomePage()),
+      );
+    } catch (e) {
+      print('Error during Google sign-in or saving user data: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Sign-in failed. Please try again.')),
+      );
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -22,15 +108,16 @@ class _LoginPageState extends State<LoginPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(padding: EdgeInsets.all(30.0)),
-            Text(
+            const Text(
               'Sign In',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 30),
-            Text(
+            const SizedBox(height: 30),
+            const Text(
+
               "Email",
               style: TextStyle(
                 fontSize: 18,
@@ -39,17 +126,12 @@ class _LoginPageState extends State<LoginPage> {
             ),
             TextField(
               controller: _emailController,
-              decoration: InputDecoration(
-                hintText: 'Enter your email', // Placeholder text
-                hintStyle: TextStyle(
-                  color: Colors.grey, // Change hint text color
-                  fontSize: 16.0, // Change font size
-                  fontStyle: FontStyle.italic, // Make it italic
-                ),
+              decoration: const InputDecoration(
+                hintText: 'Enter your email',
               ),
             ),
-            Padding(padding: EdgeInsets.all(10.0)),
-            Text(
+            const Padding(padding: EdgeInsets.all(10.0)),
+            const Text(
               "Password",
               style: TextStyle(
                 fontSize: 18,
@@ -58,81 +140,48 @@ class _LoginPageState extends State<LoginPage> {
             ),
             TextField(
               controller: _passwordController,
-              obscureText: !_isPasswordVisible, // Hide or show password
-              decoration: InputDecoration(
-                hintText: 'Enter your password', // Placeholder text
-                hintStyle: TextStyle(
-                  color: Colors.grey, // Change hint text color
-                  fontSize: 16.0, // Change font size
-                  fontStyle: FontStyle.italic, // Make it italic
-                ),
-                suffixIcon: IconButton(
-                  icon: Icon(
-                    _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
-                  ),
-                  onPressed: () {
-                    setState(() {
-                      _isPasswordVisible = !_isPasswordVisible;
-                    });
-                  },
-                ),
-              ),
-            ),
-            SizedBox(height: 30),
-            ElevatedButton(
-              onPressed: () async {
-                // Simulate login logic (check credentials, etc.)
-                SharedPreferences prefs = await SharedPreferences.getInstance();
-                await prefs.setBool('isLoggedIn', true);
+              decoration: const InputDecoration(
+                hintText: 'Enter your password',
 
-                // Navigate to the home page after login
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => HomePage()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0x9954473F), // Button color
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                minimumSize: Size(double.infinity, 60), // Full width, 60px height
               ),
-              child: Text('SIGN IN',
-                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
-            SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Placeholder for Google Sign-In logic
-              },
-              icon: Image.network(
-                'https://www.google.com/favicon.ico',
-                width: 24,
-                height: 24,
-                fit: BoxFit.contain,
-              ),
-              label: Text('Sign Up with Google'),
+            const SizedBox(height: 30),
+            ElevatedButton(
+              onPressed: _signInWithEmailPassword,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent, // Google button blue
+                backgroundColor: Color(0x9954473F),
                 padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
                 minimumSize: Size(double.infinity, 60),
               ),
+              child: const Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _signInWithGoogle,
+              icon: const Icon(Icons.login),
+              label: const Text('Sign In with Google'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: const Size(double.infinity, 60),
+              ),
+
+            ),
+            const SizedBox(height: 20),
             TextButton(
               onPressed: () {
-                // Navigate to Register page
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => RegisterPage()),
                 );
               },
-              child: Text(
+              child: const Text(
                 'Don\'t have an account? Sign Up',
                 style: TextStyle(color: Colors.blue),
               ),

@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 
 class ForumPage extends StatefulWidget {
@@ -7,13 +9,45 @@ class ForumPage extends StatefulWidget {
 
 class _ForumPageState extends State<ForumPage> {
   final TextEditingController _postController = TextEditingController();
-  List<String> posts = [
-    "Why am I not gaining more muscle although I eat and exercise a lot? :(",
-    "Anyone else experiencing low energy despite good sleep?",
-    "Struggling to stay consistent with my workout routine, any tips?",
-    "What exercises can I do at home to build strength?",
-    "I feel like I'm not progressing in my workout, any advice?",
-  ]; // Initialize with some sample posts
+
+  String? currentUserName; // Store the current user's name
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchCurrentUserName(); // Fetch the current user's name when the page loads
+  }
+
+  Future<void> _fetchCurrentUserName() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null) {
+        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        setState(() {
+          currentUserName = doc['fullname']; // Fetch the user's name from Firestore
+        });
+      }
+    } catch (e) {
+      print("Error fetching user name: $e");
+    }
+  }
+
+  Future<void> _addPostToFirestore(String postContent) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && currentUserName != null) {
+        await FirebaseFirestore.instance.collection('forum').add({
+          'content': postContent,
+          'fullname': currentUserName,
+          'timestamp': FieldValue.serverTimestamp(),
+          'likes': 0, // Default value for likes
+          'uid': user.uid,
+        });
+      }
+    } catch (e) {
+      print("Error adding post to Firestore: $e");
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +66,8 @@ class _ForumPageState extends State<ForumPage> {
                     Navigator.pop(context);
                   },
                 ),
-                Text(
+                const Text(
+
                   'Forum',
                   style: TextStyle(
                     fontSize: 24,
@@ -56,15 +91,16 @@ class _ForumPageState extends State<ForumPage> {
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
+                  const CircleAvatar(
                     backgroundColor: Colors.green,
                     child: Icon(Icons.person, color: Colors.white),
                   ),
-                  SizedBox(width: 12),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
                       controller: _postController, // Set controller
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
+
                         hintText: "What's on your mind?",
                         border: InputBorder.none,
                       ),
@@ -74,26 +110,44 @@ class _ForumPageState extends State<ForumPage> {
                     onPressed: () {
                       _handlePostAction(context);
                     },
-                    child: Text("Post"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purple[200],
                     ),
+                    child: const Text("Post"),
                   ),
                 ],
               ),
             ),
-            SizedBox(height: 16),
+            const SizedBox(height: 16),
 
             // List of Forum Posts
             Expanded(
-              child: ListView.builder(
-                itemCount: posts.length, // Dynamically update the number of posts
-                itemBuilder: (context, index) {
-                  return Column(
-                    children: [
-                      _buildForumCard(posts[index]), // Pass the post content to the card
-                      SizedBox(height: 8),
-                    ],
+              child: StreamBuilder<QuerySnapshot>(
+                stream: FirebaseFirestore.instance
+                    .collection('forum')
+                    .orderBy('timestamp', descending: true)
+                    .snapshots(),
+                builder: (context, snapshot) {
+                  if (!snapshot.hasData) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  final posts = snapshot.data!.docs;
+                  return ListView.builder(
+                    itemCount: posts.length,
+                    itemBuilder: (context, index) {
+                      final post = posts[index].data() as Map<String, dynamic>;
+                      return Column(
+                        children: [
+                          _buildForumCard(
+                            post['fullname'] ?? 'Unknown',
+                            post['content'] ?? '',
+                            post['timestamp'] as Timestamp?,
+                          ),
+                          SizedBox(height: 8),
+                        ],
+                      );
+                    },
+
                   );
                 },
               ),
@@ -108,13 +162,11 @@ class _ForumPageState extends State<ForumPage> {
           if (index == 3) {
             Navigator.pushNamed(context, '/leaderboard');
           } else if (index == 1) {
-            // Example for navigating to a "Workout" page
             Navigator.pushNamed(context, '/workout');
           } else if (index == 2) {
-            // Example for navigating to a "Leaderboard" page
             Navigator.pushNamed(context, '/leaderboard');
           } else if (index == 0) {
-            // Example for navigating to a "Profile" page
+
             Navigator.pushNamed(context, '/home');
           }
         },
@@ -122,7 +174,7 @@ class _ForumPageState extends State<ForumPage> {
         unselectedItemColor: Colors.black,
         showSelectedLabels: false,
         showUnselectedLabels: false,
-        items: [
+        items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.pie_chart),
             label: 'Home',
@@ -144,8 +196,16 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
-  // Forum Card Widget
-  Widget _buildForumCard(String postContent) {
+// Forum Card Widget with Timestamp Formatting (Without intl.dart)
+  Widget _buildForumCard(String userName, String postContent, Timestamp? timestamp) {
+    String formattedTime = "Unknown Time";
+    if (timestamp != null) {
+      final dateTime = timestamp.toDate();
+      formattedTime =
+      "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year} "
+          "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}"; // Format as DD-MM-YYYY HH:MM
+    }
+
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
@@ -165,7 +225,7 @@ class _ForumPageState extends State<ForumPage> {
         children: [
           Row(
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 backgroundColor: Colors.green,
                 child: Icon(Icons.person, color: Colors.white),
               ),
@@ -174,114 +234,58 @@ class _ForumPageState extends State<ForumPage> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    "Cornel Karel",
-                    style: TextStyle(
+                    userName, // Display the user's name
+                    style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 16,
                     ),
                   ),
                   Text(
-                    "Just now",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                    formattedTime, // Display the formatted timestamp
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
                   ),
                 ],
               ),
-              Spacer(),
-              TextButton(
-                onPressed: () {
-                  // Follow action
-                },
-                child: Text(
-                  "Follow",
-                  style: TextStyle(color: Colors.purple),
-                ),
-              ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
             postContent,
-            style: TextStyle(fontSize: 14, color: Colors.black),
-          ),
-          SizedBox(height: 12),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  _buildActionIcon(Icons.thumb_up_alt_outlined, "10"),
-                ],
-              ),
-            ],
+            style: const TextStyle(fontSize: 14, color: Colors.black),
           ),
         ],
       ),
     );
   }
 
-  // Action Icon Widget
-  Widget _buildActionIcon(IconData icon, String count) {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6.0),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: Colors.grey[300],
-          ),
-          child: Icon(
-            icon,
-            size: 16,
-            color: Colors.grey[700],
-          ),
-        ),
-        SizedBox(width: 6),
-        Text(
-          count,
-          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-        ),
-        SizedBox(width: 6),
-        Text(
-          "Likes",
-          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
-        ),
-      ],
-    );
-  }
 
   // Handle Post Action
   void _handlePostAction(BuildContext context) {
     String postContent = _postController.text.trim();
 
     if (postContent.isEmpty) {
-      // Show validation error if post is empty
-      _showErrorDialog(context);
+      _showErrorDialog(context); // Show validation error if post is empty
     } else {
-      setState(() {
-        // Add the new post to the top of the list
-        posts.insert(0, postContent);
-      });
-
-      // Show success dialog if post is valid
-      _showPostSuccessDialog(context);
+      _addPostToFirestore(postContent); // Add post to Firestore
       _postController.clear(); // Clear the input after posting
+      _showPostSuccessDialog(context); // Show success dialog
     }
   }
 
-  // Show Success Dialog
+  // Show Dialogs
   void _showPostSuccessDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Post Successful"),
-          content: Text("Your post has been successfully submitted!"),
+          title: const Text("Post Successful"),
+          content: const Text("Your post has been successfully submitted!"),
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context); // Close the dialog
               },
-              child: Text("OK"),
+              child: const Text("OK"),
             ),
           ],
         );
@@ -289,20 +293,20 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
-  // Show Error Dialog for empty post
-  void _showErrorDialog(BuildContext context) {
+  void _showErrorDialog(BuildContext context, {String message = "Please enter some text before posting."}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text("Error"),
-          content: Text("Please enter some text before posting."),
+          title: const Text("Error"),
+          content: Text(message),
+
           actions: [
             TextButton(
               onPressed: () {
                 Navigator.pop(context); // Close the dialog
               },
-              child: Text("OK"),
+              child: const Text("OK"),
             ),
           ],
         );
@@ -310,3 +314,4 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 }
+
