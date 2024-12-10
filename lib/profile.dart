@@ -13,17 +13,38 @@ class ProfilePage extends StatefulWidget {
 }
 
 class _ProfilePageState extends State<ProfilePage> {
-  String _profileImage = 'assets/profile_picture.png'; // Default profile image
+  String _profileImage = 'assets/profiles/boy-default.png'; // Default profile image
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfileImage();
+  }
+
+  Future<void> _loadProfileImage() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser != null) {
+      final doc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+      if (doc.exists) {
+        final avatarFilename = doc.data()?['avatar'];
+        if (avatarFilename != null && avatarFilename.isNotEmpty) {
+          setState(() {
+            _profileImage = 'assets/profiles/$avatarFilename';
+          });
+        }
+      }
+    }
+  }
 
   Future<String> _getUserFullName() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       final doc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
       if (doc.exists) {
-        return doc.data()?['fullname'] ?? '@username';
+        return doc.data()?['fullname'] ?? 'Guest';
       }
     }
-    return '@username'; // Default value if no user or fullname found
+    return 'Guest'; // Default value if no user or fullname found
   }
 
   @override
@@ -222,7 +243,7 @@ class _ProfilePageState extends State<ProfilePage> {
 
     if (selectedAvatar != null && selectedAvatar.isNotEmpty) {
       setState(() {
-        _profileImage = selectedAvatar;
+        _profileImage = 'assets/profiles/$selectedAvatar';
       });
     }
   }

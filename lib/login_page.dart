@@ -72,6 +72,7 @@ class _LoginPageState extends State<LoginPage> {
             'email': user.email,
             'points': 0, // Default value
             'workout_type': '', // Default value
+            'avatar': 'boy-default',
           }).catchError((error) {
             print('Error storing user data: $error');
             ScaffoldMessenger.of(context).showSnackBar(
