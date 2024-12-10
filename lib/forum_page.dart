@@ -1,6 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'reply_page.dart';
+import 'setting_page.dart';
 
 class ForumPage extends StatefulWidget {
   @override
@@ -10,12 +12,15 @@ class ForumPage extends StatefulWidget {
 class _ForumPageState extends State<ForumPage> {
   final TextEditingController _postController = TextEditingController();
 
-  String? currentUserName; // Store the current user's name
+  String? currentUserName;
+
+  // Track liked posts locally
+  Set<String> likedPosts = {};
 
   @override
   void initState() {
     super.initState();
-    _fetchCurrentUserName(); // Fetch the current user's name when the page loads
+    _fetchCurrentUserName();
   }
 
   Future<void> _fetchCurrentUserName() async {
@@ -24,7 +29,7 @@ class _ForumPageState extends State<ForumPage> {
       if (user != null) {
         final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
         setState(() {
-          currentUserName = doc['fullname']; // Fetch the user's name from Firestore
+          currentUserName = doc['fullname'];
         });
       }
     } catch (e) {
@@ -49,6 +54,41 @@ class _ForumPageState extends State<ForumPage> {
     }
   }
 
+  Future<void> _toggleLike(DocumentSnapshot post) async {
+    try {
+      final postId = post.id;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return; // Ensure user is authenticated.
+
+      // Toggle like/unlike
+      if (likedPosts.contains(postId)) {
+        // Unlike the post
+        await post.reference.update({'likes': post['likes'] - 1});
+        setState(() {
+          likedPosts.remove(postId);
+        });
+      } else {
+        // Like the post
+        await post.reference.update({'likes': post['likes'] + 1});
+        setState(() {
+          likedPosts.add(postId);
+        });
+      }
+    } catch (e) {
+      print("Error toggling like: $e");
+    }
+  }
+
+  void _replyToPost(String postId) {
+    // Implement reply functionality by navigating to the ReplyPage
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReplyPage(postId: postId), // Navigate to the ReplyPage
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,7 +107,6 @@ class _ForumPageState extends State<ForumPage> {
                   },
                 ),
                 const Text(
-
                   'Forum',
                   style: TextStyle(
                     fontSize: 24,
@@ -75,14 +114,19 @@ class _ForumPageState extends State<ForumPage> {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.settings),
+                  icon: const Icon(Icons.settings),
                   onPressed: () {
                     // Navigate to Settings Page or Open Settings
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SettingsPage(), // Navigate to the ReplyPage
+                      ),
+                    );
                   },
                 ),
               ],
             ),
-            // Post Input Section
             Container(
               padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
@@ -98,9 +142,8 @@ class _ForumPageState extends State<ForumPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
-                      controller: _postController, // Set controller
+                      controller: _postController,
                       decoration: const InputDecoration(
-
                         hintText: "What's on your mind?",
                         border: InputBorder.none,
                       ),
@@ -119,8 +162,6 @@ class _ForumPageState extends State<ForumPage> {
               ),
             ),
             const SizedBox(height: 16),
-
-            // List of Forum Posts
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
                 stream: FirebaseFirestore.instance
@@ -136,18 +177,20 @@ class _ForumPageState extends State<ForumPage> {
                     itemCount: posts.length,
                     itemBuilder: (context, index) {
                       final post = posts[index].data() as Map<String, dynamic>;
+                      final postId = posts[index].id;
                       return Column(
                         children: [
                           _buildForumCard(
+                            postId,
                             post['fullname'] ?? 'Unknown',
                             post['content'] ?? '',
+                            post['likes'] ?? 0,
                             post['timestamp'] as Timestamp?,
                           ),
                           SizedBox(height: 8),
                         ],
                       );
                     },
-
                   );
                 },
               ),
@@ -155,55 +198,16 @@ class _ForumPageState extends State<ForumPage> {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed,
-        onTap: (index) {
-          // Handle navigation based on the selected item
-          if (index == 3) {
-            Navigator.pushNamed(context, '/leaderboard');
-          } else if (index == 1) {
-            Navigator.pushNamed(context, '/workout');
-          } else if (index == 2) {
-            Navigator.pushNamed(context, '/leaderboard');
-          } else if (index == 0) {
-
-            Navigator.pushNamed(context, '/home');
-          }
-        },
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.black,
-        showSelectedLabels: false,
-        showUnselectedLabels: false,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.pie_chart),
-            label: 'Home',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.fitness_center),
-            label: 'Workout',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.leaderboard),
-            label: 'Leaderboard',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
-          ),
-        ],
-      ),
     );
   }
 
-// Forum Card Widget with Timestamp Formatting (Without intl.dart)
-  Widget _buildForumCard(String userName, String postContent, Timestamp? timestamp) {
+  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp) {
     String formattedTime = "Unknown Time";
     if (timestamp != null) {
       final dateTime = timestamp.toDate();
       formattedTime =
       "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year} "
-          "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}"; // Format as DD-MM-YYYY HH:MM
+          "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
     }
 
     return Container(
@@ -230,21 +234,30 @@ class _ForumPageState extends State<ForumPage> {
                 child: Icon(Icons.person, color: Colors.white),
               ),
               SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    userName, // Display the user's name
-                    style: const TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                  Text(
-                    formattedTime, // Display the formatted timestamp
-                    style: const TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+                    Text(
+                      formattedTime,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  // Follow user action
+                  print("Follow user: $userName");
+                },
+                icon: const Icon(Icons.person_add),
               ),
             ],
           ),
@@ -253,26 +266,44 @@ class _ForumPageState extends State<ForumPage> {
             postContent,
             style: const TextStyle(fontSize: 14, color: Colors.black),
           ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () async {
+                  final docSnapshot = await FirebaseFirestore.instance.collection('forum').doc(postId).get();
+                  _toggleLike(docSnapshot);
+                },
+                icon: Icon(
+                  Icons.thumb_up,
+                  color: likedPosts.contains(postId) ? Colors.blue : Colors.grey,
+                ),
+              ),
+              Text('$likes Likes  '),
+              TextButton.icon(
+                onPressed: () => _replyToPost(postId),
+                icon: const Icon(Icons.reply, color: Colors.grey), // Icon
+                label: const Text('Reply', style: TextStyle(color: Colors.grey)), // Text
+              ),
+            ],
+          ),
         ],
       ),
     );
   }
 
-
-  // Handle Post Action
   void _handlePostAction(BuildContext context) {
     String postContent = _postController.text.trim();
 
     if (postContent.isEmpty) {
-      _showErrorDialog(context); // Show validation error if post is empty
+      _showErrorDialog(context);
     } else {
-      _addPostToFirestore(postContent); // Add post to Firestore
-      _postController.clear(); // Clear the input after posting
-      _showPostSuccessDialog(context); // Show success dialog
+      _addPostToFirestore(postContent);
+      _postController.clear();
+      _showPostSuccessDialog(context);
     }
   }
 
-  // Show Dialogs
   void _showPostSuccessDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -283,7 +314,7 @@ class _ForumPageState extends State<ForumPage> {
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close the dialog
+                Navigator.pop(context);
               },
               child: const Text("OK"),
             ),
@@ -300,11 +331,10 @@ class _ForumPageState extends State<ForumPage> {
         return AlertDialog(
           title: const Text("Error"),
           content: Text(message),
-
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context); // Close the dialog
+                Navigator.pop(context);
               },
               child: const Text("OK"),
             ),
@@ -314,4 +344,3 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 }
-

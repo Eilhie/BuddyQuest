@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'setting_page.dart';
 
 class LeaderboardPage extends StatelessWidget {
   final List<Map<String, dynamic>> leaderboardData = [
@@ -39,9 +40,15 @@ class LeaderboardPage extends StatelessWidget {
                   ),
                 ),
                 IconButton(
-                  icon: Icon(Icons.settings),
+                  icon: const Icon(Icons.settings),
                   onPressed: () {
                     // Navigate to Settings Page or Open Settings
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SettingsPage(), // Navigate to the ReplyPage
+                      ),
+                    );
                   },
                 ),
               ],

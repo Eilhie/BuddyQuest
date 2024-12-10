@@ -2,6 +2,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'setting_page.dart';
 
 class AvatarSelectionPage extends StatelessWidget {
   final List<String> avatarImages = [
@@ -52,9 +53,15 @@ class AvatarSelectionPage extends StatelessWidget {
                 ),
               ),
               IconButton(
-                icon: Icon(Icons.settings),
+                icon: const Icon(Icons.settings),
                 onPressed: () {
-                  // Navigate to Settings Page or Open Settings (if needed)
+                  // Navigate to Settings Page or Open Settings
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SettingsPage(), // Navigate to the ReplyPage
+                    ),
+                  );
                 },
               ),
             ],
