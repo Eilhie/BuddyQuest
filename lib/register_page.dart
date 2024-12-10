@@ -1,17 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-
 import 'package:firebase_auth/firebase_auth.dart';
-
 import 'calibration_flow.dart';
 import 'login_page.dart';
 
-class RegisterPage extends StatefulWidget {
-  @override
-  _RegisterPageState createState() => _RegisterPageState();
-}
-
-class _RegisterPageState extends State<RegisterPage> {
+class RegisterPage extends StatelessWidget {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
@@ -48,7 +41,7 @@ class _RegisterPageState extends State<RegisterPage> {
         // Email already exists in Firestore
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("This email is already registered. Please log in."),
+            content: Text("This email is already registered. Please log in. "),
             backgroundColor: Colors.red,
           ),
         );
@@ -108,7 +101,6 @@ class _RegisterPageState extends State<RegisterPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -151,13 +143,9 @@ class _RegisterPageState extends State<RegisterPage> {
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
-
             ),
-            SizedBox(height: 10),
-            _buildLabel('Email'),
-            _buildTextField(
+            TextField(
               controller: _emailController,
-
               decoration: const InputDecoration(
                 hintText: 'Enter your email',
                 hintStyle: TextStyle(
@@ -194,11 +182,8 @@ class _RegisterPageState extends State<RegisterPage> {
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
               ),
-
             ),
-            SizedBox(height: 10),
-            _buildLabel('Confirm Password'),
-            _buildPasswordField(
+            TextField(
               controller: _confirmPasswordController,
               obscureText: true,
               decoration: const InputDecoration(
@@ -223,11 +208,11 @@ class _RegisterPageState extends State<RegisterPage> {
               ),
               child: const Text('SIGN UP',
                   style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-
             ),
             const SizedBox(height: 20),
             TextButton(
               onPressed: () {
+                // Navigate to the Login page
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => LoginPage()),
