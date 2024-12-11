@@ -1,8 +1,8 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'forum_page.dart'; // Add import for Forum Page
+import 'forum_page.dart';
+import 'reply_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -12,20 +12,25 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String _userFirstName = "Guest"; // Default value
   final FirebaseAuth _auth = FirebaseAuth.instance;
+  final List<DocumentSnapshot> _latestPosts = [];
+  final Set<String> likedPosts = {}; // Track liked posts
+  String? currentUserId; // Track the logged-in user's ID
+  bool _isLoadingPosts = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserFirstName();
+    _fetchCurrentUserId();
+    _fetchLatestPosts();
   }
 
-  // Load the user's first name from Firebase
+  // Fetch the current user's first name
   Future<void> _loadUserFirstName() async {
     try {
       final User? user = _auth.currentUser;
       if (user != null) {
         String uid = user.uid;
-        // Access get the user full name
         DocumentSnapshot userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(uid)
@@ -43,6 +48,114 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _userFirstName = "Guest";
       });
+    }
+  }
+
+  // Fetch the current user's ID
+  Future<void> _fetchCurrentUserId() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        currentUserId = user.uid;
+      });
+    }
+  }
+
+  // Fetch the latest forum posts
+  Future<void> _fetchLatestPosts() async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('forum')
+          .orderBy('timestamp', descending: true)
+          .limit(3) // Fetch the top 3 latest posts
+          .get();
+
+      for (final post in querySnapshot.docs) {
+        await _loadLikeState(post.id); // Load the like state for each post
+      }
+
+      setState(() {
+        _latestPosts.addAll(querySnapshot.docs);
+        _isLoadingPosts = false;
+      });
+    } catch (e) {
+      print("Error fetching latest posts: $e");
+      setState(() {
+        _isLoadingPosts = false;
+      });
+    }
+  }
+
+  // Toggle like or unlike for a post
+  Future<void> _toggleLike(String postId) async {
+    try {
+      if (currentUserId == null) return;
+
+      final postRef = FirebaseFirestore.instance
+          .collection('forum')
+          .doc(postId)
+          .collection('post_likes')
+          .doc(currentUserId);
+
+      final postSnapshot = await postRef.get();
+
+      if (postSnapshot.exists) {
+        // Unlike: Remove the user's UID from the `post_likes` nested collection
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final postDoc = FirebaseFirestore.instance.collection('forum').doc(postId);
+          final freshPostSnapshot = await transaction.get(postDoc);
+
+          if (!freshPostSnapshot.exists) return;
+
+          final currentLikes = freshPostSnapshot['likes'] ?? 0;
+          transaction.update(postDoc, {'likes': currentLikes - 1});
+          transaction.delete(postRef);
+        });
+
+        setState(() {
+          likedPosts.remove(postId);
+        });
+      } else {
+        // Like: Add the user's UID to the `post_likes` nested collection
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final postDoc = FirebaseFirestore.instance.collection('forum').doc(postId);
+          final freshPostSnapshot = await transaction.get(postDoc);
+
+          if (!freshPostSnapshot.exists) return;
+
+          final currentLikes = freshPostSnapshot['likes'] ?? 0;
+          transaction.update(postDoc, {'likes': currentLikes + 1});
+          transaction.set(postRef, {'uid': currentUserId});
+        });
+
+        setState(() {
+          likedPosts.add(postId);
+        });
+      }
+    } catch (e) {
+      print("Error toggling like: $e");
+    }
+  }
+
+  // Load the like state for a specific post
+  Future<void> _loadLikeState(String postId) async {
+    try {
+      if (currentUserId == null) return;
+
+      final postLikeRef = FirebaseFirestore.instance
+          .collection('forum')
+          .doc(postId)
+          .collection('post_likes')
+          .doc(currentUserId);
+
+      final postLikeSnapshot = await postLikeRef.get();
+      if (postLikeSnapshot.exists) {
+        setState(() {
+          likedPosts.add(postId);
+        });
+      }
+    } catch (e) {
+      print("Error loading like state: $e");
     }
   }
 
@@ -121,34 +234,34 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8.0),
-                  color: Colors.white,
-                ),
-                child: Column(
-                  children: [
-                    _buildForumCard(),
-                    SizedBox(height: 8),
-                    _buildForumCard(),
-                    SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => ForumPage()),
-                        );
-                      },
-                      child: const Text(
-                        "See More",
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
+              _isLoadingPosts
+                  ? Center(child: CircularProgressIndicator())
+                  : Column(
+                children: _latestPosts.map((postDoc) {
+                  final post = postDoc.data() as Map<String, dynamic>;
+                  return _buildForumCard(
+                    postDoc.id,
+                    post['fullname'] ?? 'Unknown',
+                    post['content'] ?? '',
+                    post['likes'] ?? 0,
+                    post['timestamp'] as Timestamp?,
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ForumPage()),
+                  );
+                },
+                child: const Text(
+                  "See More",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -195,45 +308,88 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildForumCard() {
+  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp) {
+    String formattedTime = "Unknown Time";
+    if (timestamp != null) {
+      final dateTime = timestamp.toDate();
+      formattedTime =
+      "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year} "
+          "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
+    }
+
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8.0),
-        color: Colors.grey.withOpacity(0.1),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            blurRadius: 4,
+            spreadRadius: 2,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 backgroundColor: Colors.green,
                 child: Icon(Icons.person, color: Colors.white),
               ),
               SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Cornel Karel",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                  Text(
-                    "6h ago",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+                    Text(
+                      formattedTime,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            "Why am I not gaining more muscle although I eat and exercise a lot? :(",
-            style: TextStyle(fontSize: 14, color: Colors.black),
+            postContent,
+            style: const TextStyle(fontSize: 14, color: Colors.black),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () => _toggleLike(postId),
+                icon: Icon(
+                  Icons.thumb_up,
+                  color: likedPosts.contains(postId) ? Colors.blue : Colors.grey,
+                ),
+              ),
+              Text('$likes Likes'),
+              TextButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReplyPage(postId: postId),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.reply, color: Colors.grey),
+                label: const Text('Reply', style: TextStyle(color: Colors.grey)),
+              ),
+            ],
           ),
         ],
       ),

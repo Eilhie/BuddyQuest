@@ -325,6 +325,12 @@ class _ForumPageState extends State<ForumPage> {
                   ],
                 ),
               ),
+              IconButton(
+                onPressed: () {
+                  print("Follow user: $userName");
+                },
+                icon: const Icon(Icons.person_add),
+              ),
             ],
           ),
           const SizedBox(height: 8),
