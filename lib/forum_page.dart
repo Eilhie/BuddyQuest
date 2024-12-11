@@ -1,93 +1,19 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'reply_page.dart';
-import 'setting_page.dart';
 
 class ForumPage extends StatefulWidget {
   @override
   _ForumPageState createState() => _ForumPageState();
 }
-//test
+
 class _ForumPageState extends State<ForumPage> {
   final TextEditingController _postController = TextEditingController();
-
-  String? currentUserName;
-
-  // Track liked posts locally
-  Set<String> likedPosts = {};
-
-  @override
-  void initState() {
-    super.initState();
-    _fetchCurrentUserName();
-  }
-
-  Future<void> _fetchCurrentUserName() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
-        setState(() {
-          currentUserName = doc['fullname'];
-        });
-      }
-    } catch (e) {
-      print("Error fetching user name: $e");
-    }
-  }
-
-  Future<void> _addPostToFirestore(String postContent) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null && currentUserName != null) {
-        await FirebaseFirestore.instance.collection('forum').add({
-          'content': postContent,
-          'fullname': currentUserName,
-          'timestamp': FieldValue.serverTimestamp(),
-          'likes': 0, // Default value for likes
-          'uid': user.uid,
-        });
-      }
-    } catch (e) {
-      print("Error adding post to Firestore: $e");
-    }
-  }
-
-  Future<void> _toggleLike(DocumentSnapshot post) async {
-    try {
-      final postId = post.id;
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return; // Ensure user is authenticated.
-
-      // Toggle like/unlike
-      if (likedPosts.contains(postId)) {
-        // Unlike the post
-        await post.reference.update({'likes': post['likes'] - 1});
-        setState(() {
-          likedPosts.remove(postId);
-        });
-      } else {
-        // Like the post
-        await post.reference.update({'likes': post['likes'] + 1});
-        setState(() {
-          likedPosts.add(postId);
-        });
-      }
-    } catch (e) {
-      print("Error toggling like: $e");
-    }
-  }
-
-  void _replyToPost(String postId) {
-    // Implement reply functionality by navigating to the ReplyPage
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ReplyPage(postId: postId), // Navigate to the ReplyPage
-      ),
-    );
-  }
+  List<String> posts = [
+    "Why am I not gaining more muscle although I eat and exercise a lot? :(",
+    "Anyone else experiencing low energy despite good sleep?",
+    "Struggling to stay consistent with my workout routine, any tips?",
+    "What exercises can I do at home to build strength?",
+    "I feel like I'm not progressing in my workout, any advice?",
+  ]; // Initialize with some sample posts
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +32,7 @@ class _ForumPageState extends State<ForumPage> {
                     Navigator.pop(context);
                   },
                 ),
-                const Text(
+                Text(
                   'Forum',
                   style: TextStyle(
                     fontSize: 24,
@@ -114,19 +40,14 @@ class _ForumPageState extends State<ForumPage> {
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(Icons.settings),
+                  icon: Icon(Icons.settings),
                   onPressed: () {
                     // Navigate to Settings Page or Open Settings
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => SettingsPage(), // Navigate to the ReplyPage
-                      ),
-                    );
                   },
                 ),
               ],
             ),
+            // Post Input Section
             Container(
               padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
@@ -135,15 +56,15 @@ class _ForumPageState extends State<ForumPage> {
               ),
               child: Row(
                 children: [
-                  const CircleAvatar(
+                  CircleAvatar(
                     backgroundColor: Colors.green,
                     child: Icon(Icons.person, color: Colors.white),
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Expanded(
                     child: TextField(
-                      controller: _postController,
-                      decoration: const InputDecoration(
+                      controller: _postController, // Set controller
+                      decoration: InputDecoration(
                         hintText: "What's on your mind?",
                         border: InputBorder.none,
                       ),
@@ -153,44 +74,26 @@ class _ForumPageState extends State<ForumPage> {
                     onPressed: () {
                       _handlePostAction(context);
                     },
+                    child: Text("Post"),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purple[200],
                     ),
-                    child: const Text("Post"),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: 16),
+
+            // List of Forum Posts
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('forum')
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                  final posts = snapshot.data!.docs;
-                  return ListView.builder(
-                    itemCount: posts.length,
-                    itemBuilder: (context, index) {
-                      final post = posts[index].data() as Map<String, dynamic>;
-                      final postId = posts[index].id;
-                      return Column(
-                        children: [
-                          _buildForumCard(
-                            postId,
-                            post['fullname'] ?? 'Unknown',
-                            post['content'] ?? '',
-                            post['likes'] ?? 0,
-                            post['timestamp'] as Timestamp?,
-                          ),
-                          SizedBox(height: 8),
-                        ],
-                      );
-                    },
+              child: ListView.builder(
+                itemCount: posts.length, // Dynamically update the number of posts
+                itemBuilder: (context, index) {
+                  return Column(
+                    children: [
+                      _buildForumCard(posts[index]), // Pass the post content to the card
+                      SizedBox(height: 8),
+                    ],
                   );
                 },
               ),
@@ -198,18 +101,51 @@ class _ForumPageState extends State<ForumPage> {
           ],
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          // Handle navigation based on the selected item
+          if (index == 3) {
+            Navigator.pushNamed(context, '/leaderboard');
+          } else if (index == 1) {
+            // Example for navigating to a "Workout" page
+            Navigator.pushNamed(context, '/workout');
+          } else if (index == 2) {
+            // Example for navigating to a "Leaderboard" page
+            Navigator.pushNamed(context, '/leaderboard');
+          } else if (index == 0) {
+            // Example for navigating to a "Profile" page
+            Navigator.pushNamed(context, '/home');
+          }
+        },
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.black,
+        showSelectedLabels: false,
+        showUnselectedLabels: false,
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pie_chart),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.fitness_center),
+            label: 'Workout',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.leaderboard),
+            label: 'Leaderboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
 
-  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp) {
-    String formattedTime = "Unknown Time";
-    if (timestamp != null) {
-      final dateTime = timestamp.toDate();
-      formattedTime =
-      "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year} "
-          "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
-    }
-
+  // Forum Card Widget
+  Widget _buildForumCard(String postContent) {
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
@@ -229,61 +165,52 @@ class _ForumPageState extends State<ForumPage> {
         children: [
           Row(
             children: [
-              const CircleAvatar(
+              CircleAvatar(
                 backgroundColor: Colors.green,
                 child: Icon(Icons.person, color: Colors.white),
               ),
               SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      userName,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Cornel Karel",
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
                     ),
-                    Text(
-                      formattedTime,
-                      style: const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
-                  ],
-                ),
+                  ),
+                  Text(
+                    "Just now",
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
               ),
-              IconButton(
+              Spacer(),
+              TextButton(
                 onPressed: () {
-                  // Follow user action
-                  print("Follow user: $userName");
+                  // Follow action
                 },
-                icon: const Icon(Icons.person_add),
+                child: Text(
+                  "Follow",
+                  style: TextStyle(color: Colors.purple),
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 8),
+          SizedBox(height: 8),
           Text(
             postContent,
-            style: const TextStyle(fontSize: 14, color: Colors.black),
+            style: TextStyle(fontSize: 14, color: Colors.black),
           ),
-          const SizedBox(height: 12),
+          SizedBox(height: 12),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              IconButton(
-                onPressed: () async {
-                  final docSnapshot = await FirebaseFirestore.instance.collection('forum').doc(postId).get();
-                  _toggleLike(docSnapshot);
-                },
-                icon: Icon(
-                  Icons.thumb_up,
-                  color: likedPosts.contains(postId) ? Colors.blue : Colors.grey,
-                ),
-              ),
-              Text('$likes Likes  '),
-              TextButton.icon(
-                onPressed: () => _replyToPost(postId),
-                icon: const Icon(Icons.reply, color: Colors.grey), // Icon
-                label: const Text('Reply', style: TextStyle(color: Colors.grey)), // Text
+              Row(
+                children: [
+                  _buildActionIcon(Icons.thumb_up_alt_outlined, "10"),
+                ],
               ),
             ],
           ),
@@ -292,31 +219,69 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
+  // Action Icon Widget
+  Widget _buildActionIcon(IconData icon, String count) {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6.0),
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: Colors.grey[300],
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: Colors.grey[700],
+          ),
+        ),
+        SizedBox(width: 6),
+        Text(
+          count,
+          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+        ),
+        SizedBox(width: 6),
+        Text(
+          "Likes",
+          style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+        ),
+      ],
+    );
+  }
+
+  // Handle Post Action
   void _handlePostAction(BuildContext context) {
     String postContent = _postController.text.trim();
 
     if (postContent.isEmpty) {
+      // Show validation error if post is empty
       _showErrorDialog(context);
     } else {
-      _addPostToFirestore(postContent);
-      _postController.clear();
+      setState(() {
+        // Add the new post to the top of the list
+        posts.insert(0, postContent);
+      });
+
+      // Show success dialog if post is valid
       _showPostSuccessDialog(context);
+      _postController.clear(); // Clear the input after posting
     }
   }
 
+  // Show Success Dialog
   void _showPostSuccessDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Post Successful"),
-          content: const Text("Your post has been successfully submitted!"),
+          title: Text("Post Successful"),
+          content: Text("Your post has been successfully submitted!"),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(context); // Close the dialog
               },
-              child: const Text("OK"),
+              child: Text("OK"),
             ),
           ],
         );
@@ -324,19 +289,20 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
-  void _showErrorDialog(BuildContext context, {String message = "Please enter some text before posting."}) {
+  // Show Error Dialog for empty post
+  void _showErrorDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Error"),
-          content: Text(message),
+          title: Text("Error"),
+          content: Text("Please enter some text before posting."),
           actions: [
             TextButton(
               onPressed: () {
-                Navigator.pop(context);
+                Navigator.pop(context); // Close the dialog
               },
-              child: const Text("OK"),
+              child: Text("OK"),
             ),
           ],
         );

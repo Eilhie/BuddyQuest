@@ -2,7 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'forum_page.dart'; // Add import for Forum Page
+import 'forum_page.dart';
 import 'reply_page.dart';
 
 class HomePage extends StatefulWidget {
@@ -13,25 +13,25 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String _userFirstName = "Guest"; // Default value
   final FirebaseAuth _auth = FirebaseAuth.instance;
-
-  String? currentUserName;
-
-  // Track liked posts locally
-  Set<String> likedPosts = {};
+  final List<DocumentSnapshot> _latestPosts = [];
+  final Set<String> likedPosts = {}; // Track liked posts
+  String? currentUserId; // Track the logged-in user's ID
+  bool _isLoadingPosts = true;
 
   @override
   void initState() {
     super.initState();
     _loadUserFirstName();
+    _fetchCurrentUserId();
+    _fetchLatestPosts();
   }
 
-  // Load the user's first name from Firebase
+  // Fetch the current user's first name
   Future<void> _loadUserFirstName() async {
     try {
       final User? user = _auth.currentUser;
       if (user != null) {
         String uid = user.uid;
-        // Access get the user full name
         DocumentSnapshot userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(uid)
@@ -49,6 +49,112 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         _userFirstName = "Guest";
       });
+    }
+  }
+
+  // Fetch the current user's ID
+  Future<void> _fetchCurrentUserId() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() {
+        currentUserId = user.uid;
+      });
+    }
+  }
+
+  // Fetch the latest forum posts
+  Future<void> _fetchLatestPosts() async {
+    try {
+      QuerySnapshot querySnapshot = await FirebaseFirestore.instance
+          .collection('forum')
+          .orderBy('timestamp', descending: true)
+          .limit(3)
+          .get();
+
+      for (final post in querySnapshot.docs) {
+        await _loadLikeState(post.id);
+      }
+
+      setState(() {
+        _latestPosts.addAll(querySnapshot.docs);
+        _isLoadingPosts = false;
+      });
+    } catch (e) {
+      print("Error fetching latest posts: $e");
+      setState(() {
+        _isLoadingPosts = false;
+      });
+    }
+  }
+
+  // Toggle like or unlike for a post
+  Future<void> _toggleLike(String postId) async {
+    try {
+      if (currentUserId == null) return;
+
+      final postRef = FirebaseFirestore.instance
+          .collection('forum')
+          .doc(postId)
+          .collection('post_likes')
+          .doc(currentUserId);
+
+      final postSnapshot = await postRef.get();
+
+      if (postSnapshot.exists) {
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final postDoc = FirebaseFirestore.instance.collection('forum').doc(postId);
+          final freshPostSnapshot = await transaction.get(postDoc);
+
+          if (!freshPostSnapshot.exists) return;
+
+          final currentLikes = freshPostSnapshot['likes'] ?? 0;
+          transaction.update(postDoc, {'likes': currentLikes - 1});
+          transaction.delete(postRef);
+        });
+
+        setState(() {
+          likedPosts.remove(postId);
+        });
+      } else {
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final postDoc = FirebaseFirestore.instance.collection('forum').doc(postId);
+          final freshPostSnapshot = await transaction.get(postDoc);
+
+          if (!freshPostSnapshot.exists) return;
+
+          final currentLikes = freshPostSnapshot['likes'] ?? 0;
+          transaction.update(postDoc, {'likes': currentLikes + 1});
+          transaction.set(postRef, {'uid': currentUserId});
+        });
+
+        setState(() {
+          likedPosts.add(postId);
+        });
+      }
+    } catch (e) {
+      print("Error toggling like: $e");
+    }
+  }
+
+  // Load the like state for a specific post
+  Future<void> _loadLikeState(String postId) async {
+    try {
+      if (currentUserId == null) return;
+
+      final postLikeRef = FirebaseFirestore.instance
+          .collection('forum')
+          .doc(postId)
+          .collection('post_likes')
+          .doc(currentUserId);
+
+      final postLikeSnapshot = await postLikeRef.get();
+      if (postLikeSnapshot.exists) {
+        setState(() {
+          likedPosts.add(postId);
+        });
+      }
+    } catch (e) {
+      print("Error loading like state: $e");
     }
   }
 
@@ -87,7 +193,7 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.black,
                 ),
               ),
-              const SizedBox(height: 100),
+              const SizedBox(height: 30),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -102,7 +208,6 @@ class _HomePageState extends State<HomePage> {
                   Text('4/7 days'),
                 ],
               ),
-              // STREAK CHART HERE
               StreakChart(completedDays: 4),
               const SizedBox(height: 20),
               const Row(
@@ -119,10 +224,7 @@ class _HomePageState extends State<HomePage> {
                   Text('270 points'),
                 ],
               ),
-
-              // POINTS CHART HERE
               PointsChart(points: [100, 50, 30, 90, 0, 0, 0]),
-
               const SizedBox(height: 30),
               const Text(
                 "Latest Forum",
@@ -133,34 +235,34 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
               const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16.0),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(8.0),
-                  color: Colors.white,
-                ),
-                child: Column(
-                  children: [
-                    _buildForumCard("postId1", "Cornel Karel", "Why am I not gaining muscle despite eating and exercising?", 12, Timestamp.now()),
-                    SizedBox(height: 8),
-                    _buildForumCard("postId1", "Cornel Karel", "Why am I not gaining muscle despite eating and exercising?", 12, Timestamp.now()),
-                    SizedBox(height: 8),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(builder: (context) => ForumPage()),
-                        );
-                      },
-                      child: const Text(
-                        "See More",
-                        style: TextStyle(
-                          color: Colors.blue,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
+              _isLoadingPosts
+                  ? Center(child: CircularProgressIndicator())
+                  : Column(
+                children: _latestPosts.map((postDoc) {
+                  final post = postDoc.data() as Map<String, dynamic>;
+                  return _buildForumCard(
+                    postDoc.id,
+                    post['fullname'] ?? 'Unknown',
+                    post['content'] ?? '',
+                    post['likes'] ?? 0,
+                    post['timestamp'] as Timestamp?,
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => ForumPage()),
+                  );
+                },
+                child: const Text(
+                  "See More",
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ),
             ],
@@ -207,42 +309,6 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  void _replyToPost(String postId) {
-    // Implement reply functionality by navigating to the ReplyPage
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ReplyPage(postId: postId), // Navigate to the ReplyPage
-      ),
-    );
-  }
-
-  Future<void> _toggleLike(DocumentSnapshot post) async {
-    try {
-      final postId = post.id;
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return; // Ensure user is authenticated.
-
-      // Toggle like/unlike
-      if (likedPosts.contains(postId)) {
-        // Unlike the post
-        await post.reference.update({'likes': post['likes'] - 1});
-        setState(() {
-          likedPosts.remove(postId);
-        });
-      } else {
-        // Like the post
-        await post.reference.update({'likes': post['likes'] + 1});
-        setState(() {
-          likedPosts.add(postId);
-        });
-      }
-    } catch (e) {
-      print("Error toggling like: $e");
-    }
-  }
-
-
   Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp) {
     String formattedTime = "Unknown Time";
     if (timestamp != null) {
@@ -253,11 +319,18 @@ class _HomePageState extends State<HomePage> {
     }
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8.0), // Spacing between cards
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8.0),
-        color: Colors.grey.withOpacity(0.1),
+        color: Colors.white,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.3),
+            blurRadius: 4,
+            spreadRadius: 2,
+            offset: Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -287,13 +360,6 @@ class _HomePageState extends State<HomePage> {
                   ],
                 ),
               ),
-              IconButton(
-                onPressed: () {
-                  // Follow user action
-                  print("Follow user: $userName");
-                },
-                icon: const Icon(Icons.person_add),
-              ),
             ],
           ),
           const SizedBox(height: 8),
@@ -305,11 +371,7 @@ class _HomePageState extends State<HomePage> {
           Row(
             children: [
               IconButton(
-                onPressed: () async {
-                  final docSnapshot =
-                  await FirebaseFirestore.instance.collection('forum').doc(postId).get();
-                  _toggleLike(docSnapshot);
-                },
+                onPressed: () => _toggleLike(postId),
                 icon: Icon(
                   Icons.thumb_up,
                   color: likedPosts.contains(postId) ? Colors.blue : Colors.grey,
@@ -317,9 +379,16 @@ class _HomePageState extends State<HomePage> {
               ),
               Text('$likes Likes'),
               TextButton.icon(
-                onPressed: () => _replyToPost(postId),
-                icon: const Icon(Icons.reply, color: Colors.grey), // Icon
-                label: const Text('Reply', style: TextStyle(color: Colors.grey)), // Text
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReplyPage(postId: postId),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.reply, color: Colors.grey),
+                label: const Text('Reply', style: TextStyle(color: Colors.grey)),
               ),
             ],
           ),
@@ -432,5 +501,3 @@ class PointsChart extends StatelessWidget {
     );
   }
 }
-
-
