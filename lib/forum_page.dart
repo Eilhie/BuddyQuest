@@ -8,7 +8,7 @@ class ForumPage extends StatefulWidget {
   @override
   _ForumPageState createState() => _ForumPageState();
 }
-
+//test
 class _ForumPageState extends State<ForumPage> {
   final TextEditingController _postController = TextEditingController();
   final List<DocumentSnapshot> _posts = [];
