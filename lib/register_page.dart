@@ -63,7 +63,7 @@ class RegisterPage extends StatelessWidget {
           'email': email,
           'points': 0, // Default value
           'workout_type': '', // Default value
-          'avatar': 'boy-default',
+          'avatar': 'boy-default.png',
         });
 
         Navigator.pushReplacement(
