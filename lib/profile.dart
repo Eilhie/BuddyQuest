@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'avatar_selection_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'setting_page.dart';
+import 'follow_page.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -49,146 +49,170 @@ class _ProfilePageState extends State<ProfilePage> {
     return 'Guest'; // Default value if no user or fullname found
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () {
-                      Navigator.pop(context);
-                    },
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween, // Place children on the left and right
+              children: [
+                IconButton(
+                  icon: Icon(Icons.arrow_back),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
+                Text('Profile',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
                   ),
-                  const Text(
-
-                    'Profile',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.settings),
+                  onPressed: () {
+                    // Navigate to Settings Page or Open Settings
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SettingsPage(), // Navigate to the ReplyPage
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ),
+            SizedBox(height: 40),
+            Row(
+              children: [
+                // left side
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        CircleAvatar(
+                          radius: 55, // Adjust size
+                          backgroundImage: AssetImage(_profileImage), // Profile Image
+                        ),
+                      ],
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.settings),
-                    onPressed: () {
-                      // Navigate to Settings Page or Open Settings
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SettingsPage(), // Navigate to the ReplyPage
-                        ),
-                      );
-                    },
-                  ),
-                ],
-              ),
-              const Padding(padding: EdgeInsets.all(10.0)),
-              // Profile Picture
-              GestureDetector(
-                onTap: () {
-                  _navigateToAvatarSelection(context);
-                },
-                child: CircleAvatar(
-                  radius: 64,
-                  backgroundImage: AssetImage(_profileImage),
-                  backgroundColor: Colors.grey[300],
                 ),
+                // Right side
+                Expanded(
+                  flex: 1,
+                  child: Container(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        ElevatedButton(
+                            onPressed: () {
+                              print('Follow Button Pressed');
+                            },
+                            child: Text("Follow")
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            Text(
+              'Full name',
+              style: TextStyle(
+                fontSize: 28,
+                fontWeight: FontWeight.bold,
               ),
-              const SizedBox(height: 20),
-
-              // Profile Options with dynamic @username
-              FutureBuilder<String>(
-                future: _getUserFullName(),
-                builder: (context, snapshot) {
-                  String fullname = '@username';
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    fullname = 'Loading...';
-                  } else if (snapshot.hasError) {
-                    fullname = '@username';
-                  } else if (snapshot.hasData) {
-                    fullname = snapshot.data!;
-                  }
-                  return _buildProfileOption(
-                    context,
-                    icon: Icons.person_outline,
-                    title: fullname,
-                    subtitle: 'Tap to edit User Info',
-                    onTap: () {
-                      Navigator.pushNamed(context, '/editProfile');
-                    },
-                  );
-                },
+            ),
+            SizedBox(height: 5),
+            Text(
+              '@username',
+              style: TextStyle(
+                fontSize: 18,
               ),
-
-              _buildProfileOption(
-                context,
-                icon: Icons.fitness_center,
-                title: 'Workout Plan',
-                subtitle: 'Tap to edit workout plan',
-                onTap: () {
-                  // Navigate to Workout Plan
-                },
-              ),
-              _buildProfileOption(
-                context,
-                icon: Icons.female,
-                title: 'Female, 20 years old',
-                onTap: () {
-                  // Handle Age Edit
-                },
-              ),
-              _buildProfileOption(
-                context,
-                icon: Icons.home_outlined,
-                title: 'Kemanggisan, Jakarta Barat',
-                onTap: () {
-                  // Handle Address Edit
-                },
-              ),
-              _buildProfileOption(
-                context,
-                icon: Icons.privacy_tip_outlined,
-                title: 'Privacy Shortcuts',
-                onTap: () {
-                  // Navigate to Privacy Shortcuts
-                },
-              ),
-              _buildProfileOption(
-                context,
-                icon: Icons.help_outline,
-                title: 'Help Center',
-                onTap: () {
-                  // Navigate to Help Center
-                },
-              ),
-              const SizedBox(height: 40),
-
-              // Log Out Button
-              ElevatedButton(
-                onPressed: () async {
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('isLoggedIn', false);
-
-                  Navigator.pushReplacement(
-                    context,
-                    MaterialPageRoute(builder: (context) => LoginPage()),
-                  );
-                },
-                child: const Text('Log Out'),
-              ),
-            ],
-          ),
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                GestureDetector(
+                  onTap: () {
+                    // Navigate to the "Following" page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => FollowingFollowersPage()),
+                    );
+                  },
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '552 ', // Replace with actual count
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 16),
+                        ),
+                        TextSpan(
+                          text: 'Following     ',
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () {
+                    // Navigate to the "Followers" page
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => FollowingFollowersPage()),
+                    );
+                  },
+                  child: RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: '343 ', // Replace with actual count
+                          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 16),
+                        ),
+                        TextSpan(
+                          text: 'Followers',
+                          style: TextStyle(color: Colors.grey, fontSize: 16),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 20),
+            Divider(
+              color: Colors.grey, // Color of the line
+              thickness: 1,       // Thickness of the line
+              indent: 0,         // Start margin
+              endIndent: 0,      // End margin
+            ),
+            // Post Cards Section
+            SizedBox(height: 20),
+            Text(
+              'Recent Posts',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 10),
+            _buildPostCard(),
+            _buildPostCard(),
+            _buildPostCard(),
+          ],
         ),
       ),
+
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: 3,
@@ -230,34 +254,38 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Profile option helper
-  Widget _buildProfileOption(BuildContext context,
-      {required IconData icon, required String title, String? subtitle, required VoidCallback onTap}) {
-    return ListTile(
-      leading: CircleAvatar(
-        backgroundColor: Colors.grey[200],
-        child: Icon(icon, color: Colors.black),
+  // Post Card Widget
+  Widget _buildPostCard() {
+    return Card(
+      margin: EdgeInsets.only(bottom: 15),
+      elevation: 5,
+      child: Padding(
+        padding: EdgeInsets.all(10),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                CircleAvatar(
+                  radius: 25,
+                  backgroundImage: AssetImage('assets/profiles/boy-default.png'), // Replace with post owner image
+                ),
+                SizedBox(width: 10),
+                Text(
+                  'User Name', // Replace with post owner name
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            SizedBox(height: 10),
+            Text(
+              'This is a post description, showcasing some content by the user.',
+              style: TextStyle(fontSize: 16),
+            ),
+            SizedBox(height: 10),
+          ],
+        ),
       ),
-      title: Text(title),
-      subtitle: subtitle != null ? Text(subtitle) : null,
-      trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-      onTap: onTap,
     );
-  }
-
-  // Navigate to AvatarSelectionPage and get the selected avatar
-  void _navigateToAvatarSelection(BuildContext context) async {
-    String? selectedAvatar = await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => AvatarSelectionPage()),
-    );
-
-
-    if (selectedAvatar != null && selectedAvatar.isNotEmpty) {
-      setState(() {
-        _profileImage = 'assets/profiles/$selectedAvatar';
-
-      });
-    }
   }
 }
