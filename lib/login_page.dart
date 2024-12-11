@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:software_engineering_project/flutter_dotenv.dart';
 import 'home_page.dart';
 import 'register_page.dart';
 import 'google_signin_config.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -20,10 +20,13 @@ class _LoginPageState extends State<LoginPage> {
     clientId: GoogleSignInConfig.clientId, // Add your client ID here
   );
 
+  // Initialize FirebaseFirestore
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
   // Login with Email & Password
   Future<void> _signInWithEmailPassword() async {
     try {
-      UserCredential userCredential = await _auth.signInWithEmailAndPassword(
+      await _auth.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
       );
@@ -49,14 +52,37 @@ class _LoginPageState extends State<LoginPage> {
       GoogleSignInAccount? googleUser = await _googleSignIn.signIn();
       GoogleSignInAuthentication googleAuth = await googleUser!.authentication;
 
-      // Create a new credential for Firebase
       AuthCredential credential = GoogleAuthProvider.credential(
         accessToken: googleAuth.accessToken,
         idToken: googleAuth.idToken,
       );
 
       UserCredential userCredential = await _auth.signInWithCredential(credential);
+      User? user = userCredential.user;
 
+      if (user != null) {
+        // Check if user data already exists
+        DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+
+        if (!userDoc.exists) {
+          // Store user data only if it's a new user
+          await _firestore.collection('users').doc(user.uid).set({
+            'uid': user.uid,
+            'fullname': user.displayName ?? '',
+            'email': user.email,
+            'points': 0, // Default value
+            'workout_type': '', // Default value
+            'avatar': 'boy-default',
+          }).catchError((error) {
+            print('Error storing user data: $error');
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Sign-in failed. Please try again.')),
+            );
+          });
+        }
+      }
+
+      // Navigate to home page
       SharedPreferences prefs = await SharedPreferences.getInstance();
       await prefs.setBool('isLoggedIn', true);
 
@@ -65,12 +91,13 @@ class _LoginPageState extends State<LoginPage> {
         MaterialPageRoute(builder: (context) => HomePage()),
       );
     } catch (e) {
-      print('Error during Google sign-in: $e');
+      print('Error during Google sign-in or saving user data: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google sign-in failed. Please try again.')),
+        const SnackBar(content: Text('Sign-in failed. Please try again.')),
       );
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -81,15 +108,16 @@ class _LoginPageState extends State<LoginPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Padding(padding: EdgeInsets.all(30.0)),
-            Text(
+            const Text(
               'Sign In',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 30),
-            Text(
+            const SizedBox(height: 30),
+            const Text(
+
               "Email",
               style: TextStyle(
                 fontSize: 18,
@@ -98,12 +126,12 @@ class _LoginPageState extends State<LoginPage> {
             ),
             TextField(
               controller: _emailController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Enter your email',
               ),
             ),
-            Padding(padding: EdgeInsets.all(10.0)),
-            Text(
+            const Padding(padding: EdgeInsets.all(10.0)),
+            const Text(
               "Password",
               style: TextStyle(
                 fontSize: 18,
@@ -112,11 +140,12 @@ class _LoginPageState extends State<LoginPage> {
             ),
             TextField(
               controller: _passwordController,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 hintText: 'Enter your password',
+
               ),
             ),
-            SizedBox(height: 30),
+            const SizedBox(height: 30),
             ElevatedButton(
               onPressed: _signInWithEmailPassword,
               style: ElevatedButton.styleFrom(
@@ -127,23 +156,24 @@ class _LoginPageState extends State<LoginPage> {
                 ),
                 minimumSize: Size(double.infinity, 60),
               ),
-              child: Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+              child: const Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _signInWithGoogle,
-              icon: Icon(Icons.login),
-              label: Text('Sign In with Google'),
+              icon: const Icon(Icons.login),
+              label: const Text('Sign In with Google'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.red,
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                minimumSize: Size(double.infinity, 60),
+                minimumSize: const Size(double.infinity, 60),
               ),
+
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextButton(
               onPressed: () {
                 Navigator.pushReplacement(
@@ -151,7 +181,7 @@ class _LoginPageState extends State<LoginPage> {
                   MaterialPageRoute(builder: (context) => RegisterPage()),
                 );
               },
-              child: Text(
+              child: const Text(
                 'Don\'t have an account? Sign Up',
                 style: TextStyle(color: Colors.blue),
               ),

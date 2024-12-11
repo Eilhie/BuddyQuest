@@ -5,16 +5,15 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'avatar_selection_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'setting_page.dart';
 
-class ProfilePage extends StatefulWidget {
-  const ProfilePage({super.key});
+class SettingsPage extends StatefulWidget {
+  const SettingsPage({super.key});
 
   @override
-  _ProfilePageState createState() => _ProfilePageState();
+  _SettingsPageState createState() => _SettingsPageState();
 }
 
-class _ProfilePageState extends State<ProfilePage> {
+class _SettingsPageState extends State<SettingsPage> {
   String _profileImage = 'assets/profiles/boy-default.png'; // Default profile image
 
   @override
@@ -49,7 +48,6 @@ class _ProfilePageState extends State<ProfilePage> {
     return 'Guest'; // Default value if no user or fullname found
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,24 +68,14 @@ class _ProfilePageState extends State<ProfilePage> {
                     },
                   ),
                   const Text(
-
-                    'Profile',
+                    'Settings',
                     style: TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  IconButton(
-                    icon: const Icon(Icons.settings),
-                    onPressed: () {
-                      // Navigate to Settings Page or Open Settings
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => SettingsPage(), // Navigate to the ReplyPage
-                        ),
-                      );
-                    },
+                  const Text(
+                    '             '
                   ),
                 ],
               ),
@@ -204,9 +192,9 @@ class _ProfilePageState extends State<ProfilePage> {
             Navigator.pushNamed(context, '/home');
           }
         },
-        selectedItemColor: Colors.deepPurple,
+        selectedItemColor: Colors.black,
         unselectedItemColor: Colors.black,
-        showSelectedLabels: true,
+        showSelectedLabels: false,
         showUnselectedLabels: false,
         items: const [
           BottomNavigationBarItem(
@@ -252,11 +240,9 @@ class _ProfilePageState extends State<ProfilePage> {
       MaterialPageRoute(builder: (context) => AvatarSelectionPage()),
     );
 
-
     if (selectedAvatar != null && selectedAvatar.isNotEmpty) {
       setState(() {
         _profileImage = 'assets/profiles/$selectedAvatar';
-
       });
     }
   }

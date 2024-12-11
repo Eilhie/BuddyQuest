@@ -1,11 +1,11 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
-    id("dev.flutter.flutter-gradle-plugin") // The Flutter Gradle Plugin must be applied after Android and Kotlin plugins
-
-    // google services plugin
+    id("dev.flutter.flutter-gradle-plugin") // Flutter Gradle Plugin must follow Android & Kotlin plugins
     id 'com.google.gms.google-services'
 }
+
+
 
 android {
     namespace = "com.eilhie.software_engineering_project"
@@ -24,25 +24,25 @@ android {
     defaultConfig {
         applicationId = "com.eilhie.software_engineering_project"
         minSdk = flutter.minSdkVersion
+        minSdkVersion 23 //added
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-    }
 
-    buildTypes {
-        release {
-            signingConfig = signingConfigs.debug // Use your release signing configuration in production
+        buildTypes {
+            release {
+                signingConfig = signingConfigs.debug // Replace with production signingConfigs
+            }
         }
     }
 }
 
 dependencies {
-    // Add dependencies here if needed
-    implementation platform('com.google.firebase:firebase-bom:33.6.0')
-
+    implementation platform('com.google.firebase:firebase-bom:33.6.0') // Latest BOM
+    implementation 'com.google.firebase:firebase-auth'
+    implementation 'com.google.firebase:firebase-database'
+    implementation 'com.google.firebase:firebase-firestore'
     implementation 'com.google.firebase:firebase-analytics'
-
-
 }
 
 flutter {

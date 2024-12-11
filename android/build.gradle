@@ -1,7 +1,7 @@
 plugins {
-    id 'com.android.application' version '<gradle_version>' apply false
-    id 'org.jetbrains.kotlin.android' version '<kotlin_version>' apply false
-    id 'com.google.gms.google-services' version '4.4.0' apply false // Update to 4.4.0 or later
+    id 'com.android.application' version '8.1.0' apply false
+    id 'org.jetbrains.kotlin.android' version '1.8.22' apply false
+    id 'com.google.gms.google-services' version '4.4.0' apply false
 }
 
 allprojects {
@@ -11,22 +11,16 @@ allprojects {
     }
 }
 
+rootProject.buildDir = "../build"
+
 subprojects {
-    // Set custom build directory for subprojects
-    buildDir = "${rootProject.buildDir}/${project.name}"
-
-    // Common configurations for all subprojects
-    plugins.withType<JavaPlugin> {
-        // Configure Java-related settings if needed
-    }
-
-    // Add common dependencies for all modules
-    dependencies {
-        implementation "androidx.core:core-ktx:<version>"
-    }
+    project.buildDir = "${rootProject.buildDir}/${project.name}"
 }
 
-// Define a clean task for the entire project
-tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
+subprojects {
+    project.evaluationDependsOn(":app")
+}
+
+tasks.register("clean", Delete) {
+    delete rootProject.buildDir
 }

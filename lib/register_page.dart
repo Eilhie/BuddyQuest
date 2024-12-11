@@ -1,21 +1,105 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'login_page.dart'; // Make sure to import the login page
+import 'package:firebase_auth/firebase_auth.dart';
 import 'calibration_flow.dart';
+import 'login_page.dart';
 
-class RegisterPage extends StatefulWidget {
-  @override
-  _RegisterPageState createState() => _RegisterPageState();
-}
-
-class _RegisterPageState extends State<RegisterPage> {
+class RegisterPage extends StatelessWidget {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
-  bool _isPasswordHidden = true;
-  bool _isConfirmPasswordHidden = true;
+  final FirebaseAuth _auth = FirebaseAuth.instance; // FirebaseAuth instance
+
+  RegisterPage({super.key});
+
+  Future<void> _registerUser(BuildContext context) async {
+    final String fullName = _fullNameController.text.trim();
+    final String email = _emailController.text.trim();
+    final String password = _passwordController.text.trim();
+    final String confirmPassword = _confirmPasswordController.text.trim();
+
+    if (password != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Passwords do not match!"),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    try {
+      // Check if email is already registered
+      final userQuery = await FirebaseFirestore.instance
+          .collection('users')
+          .where('email', isEqualTo: email)
+          .get();
+
+      if (userQuery.docs.isNotEmpty) {
+        // Email already exists in Firestore
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("This email is already registered. Please log in. "),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
+      // Create user with Firebase Authentication
+      UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+      User? user = userCredential.user;
+
+      if (user != null) {
+        // Store user data in Firestore
+        await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+          'uid': user.uid,
+          'fullname': fullName,
+          'email': email,
+          'points': 0, // Default value
+          'workout_type': '', // Default value
+          'avatar': 'boy-default',
+        });
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => CalibrationPage()),
+        );
+
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+          content: Text("Account created successfully!"),
+          backgroundColor: Colors.green,
+        ));
+      }
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        // FirebaseAuth email already exists
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("This email is already in use. Please try logging in."),
+            backgroundColor: Colors.red,
+          ),
+        );
+      } else {
+        // Handle other FirebaseAuth exceptions
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text("Failed to create account: ${e.message}"),
+          backgroundColor: Colors.red,
+        ));
+      }
+    } catch (e) {
+      // Catch any other errors
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+        content: Text("An unexpected error occurred: ${e.toString()}"),
+        backgroundColor: Colors.red,
+      ));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -25,172 +109,121 @@ class _RegisterPageState extends State<RegisterPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(padding: EdgeInsets.all(30.0)),
-            Text(
+            const Padding(padding: EdgeInsets.all(30.0)),
+            const Text(
               'Create Your Account',
               style: TextStyle(
                 fontSize: 32,
                 fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(height: 30),
-            _buildLabel('Fullname'),
-            _buildTextField(
+            const SizedBox(height: 30),
+            const Text(
+              "Fullname",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextField(
               controller: _fullNameController,
-              hintText: 'Enter your fullname',
+              decoration: const InputDecoration(
+                hintText: 'Enter your fullname',
+                hintStyle: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16.0,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
             ),
-            SizedBox(height: 10),
-            _buildLabel('Email'),
-            _buildTextField(
+            const Padding(padding: EdgeInsets.all(10.0)),
+            const Text(
+              "Email",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextField(
               controller: _emailController,
-              hintText: 'Enter your email',
+              decoration: const InputDecoration(
+                hintText: 'Enter your email',
+                hintStyle: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16.0,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
             ),
-            SizedBox(height: 10),
-            _buildLabel('Password'),
-            _buildPasswordField(
+            const Padding(padding: EdgeInsets.all(10.0)),
+            const Text(
+              "Password",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextField(
               controller: _passwordController,
-              hintText: 'Enter your password',
-              isHidden: _isPasswordHidden,
-              onVisibilityToggle: () {
-                setState(() {
-                  _isPasswordHidden = !_isPasswordHidden;
-                });
-              },
+              obscureText: true,
+              decoration: const InputDecoration(
+                hintText: 'Enter your password',
+                hintStyle: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16.0,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
             ),
-            SizedBox(height: 10),
-            _buildLabel('Confirm Password'),
-            _buildPasswordField(
+            const Padding(padding: EdgeInsets.all(10.0)),
+            const Text(
+              "Confirm Password",
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            TextField(
               controller: _confirmPasswordController,
-              hintText: 'Confirm your password',
-              isHidden: _isConfirmPasswordHidden,
-              onVisibilityToggle: () {
-                setState(() {
-                  _isConfirmPasswordHidden = !_isConfirmPasswordHidden;
-                });
-              },
+              obscureText: true,
+              decoration: const InputDecoration(
+                hintText: 'Confirm your Password',
+                hintStyle: TextStyle(
+                  color: Colors.grey,
+                  fontSize: 16.0,
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
             ),
-            SizedBox(height: 20),
+            const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () async {
-                // Dummy registration action
-                if (_passwordController.text == _confirmPasswordController.text) {
-                  SharedPreferences prefs = await SharedPreferences.getInstance();
-                  await prefs.setBool('isLoggedIn', true);
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => CalibrationPage()),
-                  );
-                } else {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text("Passwords do not match!"),
-                      backgroundColor: Colors.red,
-                    ),
-                  );
-                }
-              },
+              onPressed: () => _registerUser(context), // Call the Firebase registration logic
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0x9954473F),
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                backgroundColor: const Color(0x9954473F),
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
-                minimumSize: Size(double.infinity, 60),
+                minimumSize: const Size(double.infinity, 60),
               ),
-              child: Text(
-                'SIGN UP',
-                style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
-              ),
+              child: const Text('SIGN UP',
+                  style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
-            SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: () {
-                // Placeholder for Google Sign-In logic
-              },
-              icon: Image.network(
-                'https://www.google.com/favicon.ico',
-                width: 24,
-                height: 24,
-                fit: BoxFit.contain,
-              ),
-              label: Text('Sign Up with Google'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.redAccent, // Google button blue
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                minimumSize: Size(double.infinity, 60),
-              ),
-            ),
-            SizedBox(height: 20),
+            const SizedBox(height: 20),
             TextButton(
               onPressed: () {
+                // Navigate to the Login page
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => LoginPage()),
                 );
               },
-              child: Text(
+              child: const Text(
                 'Already have an account? Sign In',
                 style: TextStyle(color: Colors.blue),
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  // Helper for labels
-  Widget _buildLabel(String text) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
-    );
-  }
-
-  // Helper for text fields
-  Widget _buildTextField({
-    required TextEditingController controller,
-    required String hintText,
-  }) {
-    return TextField(
-      controller: controller,
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: TextStyle(
-          color: Colors.grey,
-          fontSize: 16.0,
-          fontStyle: FontStyle.italic,
-        ),
-      ),
-    );
-  }
-
-  // Helper for password fields
-  Widget _buildPasswordField({
-    required TextEditingController controller,
-    required String hintText,
-    required bool isHidden,
-    required VoidCallback onVisibilityToggle,
-  }) {
-    return TextField(
-      controller: controller,
-      obscureText: isHidden,
-      decoration: InputDecoration(
-        hintText: hintText,
-        hintStyle: TextStyle(
-          color: Colors.grey,
-          fontSize: 16.0,
-          fontStyle: FontStyle.italic,
-        ),
-        suffixIcon: IconButton(
-          icon: Icon(isHidden ? Icons.visibility_off : Icons.visibility),
-          onPressed: onVisibilityToggle,
         ),
       ),
     );
