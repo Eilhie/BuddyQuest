@@ -6,7 +6,11 @@ class WorkoutPlanService
 {
   final CollectionReference workout_plans = FirebaseFirestore.instance.collection('workout_plan_v2');
 
-  Future<Map<String, dynamic>?> getExcercise(String category, int dayIdx) async
+
+  // return map <string, dynamic>
+  // kalau null rest day
+  // {exercises=list(map), day (str), workout_type (str)}
+  Future<Map<String, dynamic>?> getExcerciseByCategoryDay(String category, int dayIdx) async
   {
     try
     {
@@ -18,7 +22,8 @@ class WorkoutPlanService
       }
       else {
         Map<String, dynamic> objMap = queryDocumentSnapshot[0].data() as Map<String, dynamic>;
-        return objMap;
+        var isRestDay = ((objMap["days"]) as List<dynamic>).length <= dayIdx;
+        return isRestDay?null:objMap["days"][dayIdx];
       }
     }
     catch(e)
