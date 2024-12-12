@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:software_engineering_project/services/workout_plan_service.dart';
 import 'setting_page.dart';
+import 'package:intl/intl.dart';
 
 class WorkoutPlanPage extends StatefulWidget {
   @override
@@ -7,10 +9,13 @@ class WorkoutPlanPage extends StatefulWidget {
 }
 
 class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
-  String selectedDay = "Monday"; // Default selected day
-  Map<String, bool> blackedOutExercises = {}; // To track blacked-out state for each exercise
 
+  WorkoutPlanService workoutPlanService = WorkoutPlanService();
+
+  String selectedDay = DateFormat('EEEE').format(DateTime.now()); // Select day of week now
+  Map<String, bool> blackedOutExercises = {}; // To track blacked-out state for each exercise
   // Map of exercises for each day
+  final List<String> listOfDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
   final Map<String, List<String>> dailyExercises = {
     "Monday": ["Push-ups", "Squats", "Plank"],
     "Tuesday": ["Burpees", "Jumping Jacks", "Mountain Climbers"],
@@ -61,7 +66,7 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                   },
                 ),
               ],
-            ),
+            ), //"Workout Plan Header"
             SizedBox(height: 20),
             // Title Section
             Text(
@@ -115,7 +120,58 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
             ),
             SizedBox(height: 10),
             Expanded(
-              child: ListView.builder(
+              child:FutureBuilder(
+                  future: workoutPlanService.getExcerciseByCategoryDay("1.1", listOfDays.indexWhere((dow)=>dow==selectedDay)),
+                  builder: (context, snapshot)
+                  {
+                    if(snapshot.connectionState == ConnectionState.waiting)
+                    {
+                      return Center(child:CircularProgressIndicator());
+                    }
+                    else
+                    {
+                      if(snapshot.data == null)
+                      {
+                        return Text("Rest Bro");
+                      }
+                      Map<String, dynamic>? exercisesOfDay = snapshot.data;
+                      print(exercisesOfDay);
+                      return ListView.builder(
+                          itemCount: exercisesOfDay?["exercises"].length ?? 0,
+                          itemBuilder: (context, index)
+                          {
+                            Map<String, dynamic> currIndexExercise = exercisesOfDay?["exercises"][index];
+                            String? exerciseDetails = currIndexExercise.containsKey("details")?currIndexExercise["details"]:null;
+                            int? exerciseSets = currIndexExercise.containsKey("sets")?currIndexExercise["sets"]:null;
+                            int? exerciseReps = currIndexExercise.containsKey("reps")?currIndexExercise["reps"]:null;
+                            String? exerciseDuration = currIndexExercise.containsKey("duration")?currIndexExercise["duration"]:null;
+                            return GestureDetector(
+                              onTap:(){
+                                print("Tapped");
+                              },
+                              child:Card(
+                                elevation: 3,
+                                margin: EdgeInsets.symmetric(vertical: 8),
+                                color: false ? Colors.black.withOpacity(0.5) : null, // Blackout effect for individual card
+                                child: ListTile(
+                                  leading: Icon(Icons.fitness_center, color: Colors.deepPurple),
+                                  title:
+                                    Text(currIndexExercise["name"],
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                    ),
+                                  subtitle: Text(
+                                    exerciseDetails!=null?"$exerciseDetails":(exerciseDuration!=null?"Duration : $exerciseDuration":exerciseReps==null?"":"$exerciseSets sets, $exerciseReps reps each")
+                                  ),
+                                  trailing: Icon(Icons.info, color: Colors.deepPurple)
+                                )
+                              )
+                            );
+                          }
+                      );
+                    }
+
+                  })
+              /*child: ListView.builder(
                 itemCount: dailyExercises[selectedDay]?.length ?? 0,
                 itemBuilder: (context, index) {
                   String exercise = dailyExercises[selectedDay]?[index] ?? "";
@@ -180,7 +236,7 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                     ),
                   );
                 },
-              ),
+              ),*/
             ),
           ],
         ),
