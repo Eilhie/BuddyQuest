@@ -117,7 +117,7 @@ class _HomePageState extends State<HomePage> {
               // POINTS CHART HERE
               PointsChart(points: [100, 50, 30, 90, 0, 0, 0]),
 
-              const SizedBox(height: 150),
+              const SizedBox(height: 30),
               const Text(
                 "Latest Forum",
                 style: TextStyle(
