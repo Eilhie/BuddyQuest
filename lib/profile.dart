@@ -14,20 +14,13 @@ class ProfilePage extends StatefulWidget {
   _ProfilePageState createState() => _ProfilePageState();
 }
 
-
 class _ProfilePageState extends State<ProfilePage> {
   String _profileImage = 'assets/profiles/boy-default.png'; // Default profile image
-  int _followingCount = 0; // Number of people the user is following
-  int _followersCount = 0; // Number of people following the user
-  String _fullName = 'Guest';
-  String _username = '@username';
 
   @override
   void initState() {
     super.initState();
     _loadProfileImage();
-    _loadFollowCounts();
-    _loadUserProfile();
   }
 
   Future<void> _loadProfileImage() async {
@@ -45,57 +38,15 @@ class _ProfilePageState extends State<ProfilePage> {
     }
   }
 
-
-
-  Future<void> _loadUserProfile() async {
+  Future<String> _getUserFullName() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
       final doc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
       if (doc.exists) {
-        final fullName = doc.data()?['fullname'] ?? 'Guest';
-        final username = '@${fullName.split(' ').first.toLowerCase()}'; // Derive username from first name
-
-        setState(() {
-          _fullName = fullName;
-          _username = username;
-        });
+        return doc.data()?['fullname'] ?? 'Guest';
       }
     }
-  }
-
-  Future<void> _loadFollowCounts() async {
-    try {
-      final currentUser = FirebaseAuth.instance.currentUser;
-      if (currentUser != null) {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
-        if (doc.exists) {
-          final data = doc.data() as Map<String, dynamic>;
-          if (data.containsKey('follow_master')) {
-            final followMaster = data['follow_master'] as Map<String, dynamic>;
-            setState(() {
-              _followingCount = followMaster['following'].length;
-              _followersCount = followMaster['follower'].length;
-            });
-          } else {
-            setState(() {
-              _followingCount = 0;
-              _followersCount = 0;
-            });
-          }
-        } else {
-          setState(() {
-            _followingCount = 0;
-            _followersCount = 0;
-          });
-        }
-      }
-    } catch (e) {
-      print("Error fetching follow counts: $e");
-      setState(() {
-        _followingCount = 0;
-        _followersCount = 0;
-      });
-    }
+    return 'Guest'; // Default value if no user or fullname found
   }
 
   @override
@@ -177,7 +128,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             SizedBox(height: 10),
             Text(
-              _fullName,
+              'Full name',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -185,7 +136,7 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             SizedBox(height: 5),
             Text(
-              _username,
+              '@username',
               style: TextStyle(
                 fontSize: 18,
               ),
@@ -205,7 +156,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '$_followingCount  ', // Replace with actual count
+                          text: '552 ', // Replace with actual count
                           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 16),
                         ),
                         TextSpan(
@@ -228,7 +179,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '$_followersCount  ', // Replace with actual count
+                          text: '343 ', // Replace with actual count
                           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 16),
                         ),
                         TextSpan(
