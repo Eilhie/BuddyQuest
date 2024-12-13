@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -67,11 +68,11 @@ class _HomePageState extends State<HomePage> {
       QuerySnapshot querySnapshot = await FirebaseFirestore.instance
           .collection('forum')
           .orderBy('timestamp', descending: true)
-          .limit(3) // Fetch the top 3 latest posts
+          .limit(3)
           .get();
 
       for (final post in querySnapshot.docs) {
-        await _loadLikeState(post.id); // Load the like state for each post
+        await _loadLikeState(post.id);
       }
 
       setState(() {
@@ -100,7 +101,6 @@ class _HomePageState extends State<HomePage> {
       final postSnapshot = await postRef.get();
 
       if (postSnapshot.exists) {
-        // Unlike: Remove the user's UID from the `post_likes` nested collection
         await FirebaseFirestore.instance.runTransaction((transaction) async {
           final postDoc = FirebaseFirestore.instance.collection('forum').doc(postId);
           final freshPostSnapshot = await transaction.get(postDoc);
@@ -116,7 +116,6 @@ class _HomePageState extends State<HomePage> {
           likedPosts.remove(postId);
         });
       } else {
-        // Like: Add the user's UID to the `post_likes` nested collection
         await FirebaseFirestore.instance.runTransaction((transaction) async {
           final postDoc = FirebaseFirestore.instance.collection('forum').doc(postId);
           final freshPostSnapshot = await transaction.get(postDoc);
@@ -194,12 +193,12 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.black,
                 ),
               ),
-              const SizedBox(height: 100),
+              const SizedBox(height: 30),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "This Week",
+                    "Streaks",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -209,22 +208,24 @@ class _HomePageState extends State<HomePage> {
                   Text('4/7 days'),
                 ],
               ),
-              const SizedBox(height: 100),
+              StreakChart(completedDays: 4),
+              const SizedBox(height: 20),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    "Hours",
+                    "Points",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
                   ),
-                  Text('20 Hours'),
+                  Text('270 points'),
                 ],
               ),
-              const SizedBox(height: 150),
+              PointsChart(points: [100, 50, 30, 90, 0, 0, 0]),
+              const SizedBox(height: 30),
               const Text(
                 "Latest Forum",
                 style: TextStyle(
@@ -340,7 +341,7 @@ class _HomePageState extends State<HomePage> {
                 backgroundColor: Colors.green,
                 child: Icon(Icons.person, color: Colors.white),
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,6 +394,110 @@ class _HomePageState extends State<HomePage> {
           ),
         ],
       ),
+    );
+  }
+}
+
+// Streak Chart Widget (UI Only)
+class StreakChart extends StatelessWidget {
+  final int completedDays; // Number of completed streak days out of 7
+  final List<String> weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  StreakChart({required this.completedDays});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(7, (index) {
+        bool isCompleted = index < completedDays;
+        return Column(
+          children: [
+            Container(
+              height: 60,
+              width: 45,
+              decoration: BoxDecoration(
+                color: isCompleted ? Colors.black : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(20.0),
+              ),
+              child: Center(
+                child: Icon(
+                  Icons.check_circle,
+                  color: isCompleted ? Colors.green : Colors.grey,
+                ),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              weekDays[index],
+              style: TextStyle(
+                color: isCompleted ? Colors.black : Colors.grey,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        );
+      }),
+    );
+  }
+}
+
+class PointsChart extends StatelessWidget {
+  final List<int> points; // List containing the points for each day
+  final List<String> weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  PointsChart({required this.points});
+
+  @override
+  Widget build(BuildContext context) {
+    int maxHeight = points.isNotEmpty ? points.reduce((a, b) => a > b ? a : b) : 0; // Get the max height for normalization
+
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: List.generate(7, (index) {
+        int dayPoints = points[index];
+
+        // Calculate the normalized height based on the max height
+        double normalizedHeight = (dayPoints / maxHeight) * 100; // Adjust as needed
+
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            // Stack to ensure all bars start from the same ground
+            Container(
+              height: 100, // Maximum height for the chart
+              width: 45,
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+              ),
+              child: Stack(
+                children: [
+                  // Bar
+                  Align(
+                    alignment: Alignment.bottomCenter,
+                    child: Container(
+                      height: normalizedHeight, // Bar height based on points
+                      width: 45,
+                      decoration: BoxDecoration(
+                        color: dayPoints > 0 ? Colors.black : Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(20.0),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              weekDays[index],
+              style: TextStyle(
+                color: dayPoints > 0 ? Colors.black : Colors.grey,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        );
+      }),
     );
   }
 }
