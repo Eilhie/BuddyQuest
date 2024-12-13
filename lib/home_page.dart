@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'forum_page.dart'; // Add import for Forum Page
+import 'reply_page.dart';
 
 class HomePage extends StatefulWidget {
   @override
@@ -12,6 +13,11 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   String _userFirstName = "Guest"; // Default value
   final FirebaseAuth _auth = FirebaseAuth.instance;
+
+  String? currentUserName;
+
+  // Track liked posts locally
+  Set<String> likedPosts = {};
 
   @override
   void initState() {
@@ -135,9 +141,9 @@ class _HomePageState extends State<HomePage> {
                 ),
                 child: Column(
                   children: [
-                    _buildForumCard(),
+                    _buildForumCard("postId1", "Cornel Karel", "Why am I not gaining muscle despite eating and exercising?", 12, Timestamp.now()),
                     SizedBox(height: 8),
-                    _buildForumCard(),
+                    _buildForumCard("postId1", "Cornel Karel", "Why am I not gaining muscle despite eating and exercising?", 12, Timestamp.now()),
                     SizedBox(height: 8),
                     TextButton(
                       onPressed: () {
@@ -201,8 +207,53 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildForumCard() {
+  void _replyToPost(String postId) {
+    // Implement reply functionality by navigating to the ReplyPage
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => ReplyPage(postId: postId), // Navigate to the ReplyPage
+      ),
+    );
+  }
+
+  Future<void> _toggleLike(DocumentSnapshot post) async {
+    try {
+      final postId = post.id;
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return; // Ensure user is authenticated.
+
+      // Toggle like/unlike
+      if (likedPosts.contains(postId)) {
+        // Unlike the post
+        await post.reference.update({'likes': post['likes'] - 1});
+        setState(() {
+          likedPosts.remove(postId);
+        });
+      } else {
+        // Like the post
+        await post.reference.update({'likes': post['likes'] + 1});
+        setState(() {
+          likedPosts.add(postId);
+        });
+      }
+    } catch (e) {
+      print("Error toggling like: $e");
+    }
+  }
+
+
+  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp) {
+    String formattedTime = "Unknown Time";
+    if (timestamp != null) {
+      final dateTime = timestamp.toDate();
+      formattedTime =
+      "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year} "
+          "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
+    }
+
     return Container(
+      margin: const EdgeInsets.only(bottom: 8.0), // Spacing between cards
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8.0),
@@ -213,33 +264,64 @@ class _HomePageState extends State<HomePage> {
         children: [
           Row(
             children: [
-              CircleAvatar(
+              const CircleAvatar(
                 backgroundColor: Colors.green,
                 child: Icon(Icons.person, color: Colors.white),
               ),
-              SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Cornel Karel",
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      fontSize: 16,
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      userName,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
                     ),
-                  ),
-                  Text(
-                    "6h ago",
-                    style: TextStyle(fontSize: 12, color: Colors.grey),
-                  ),
-                ],
+                    Text(
+                      formattedTime,
+                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                  ],
+                ),
+              ),
+              IconButton(
+                onPressed: () {
+                  // Follow user action
+                  print("Follow user: $userName");
+                },
+                icon: const Icon(Icons.person_add),
               ),
             ],
           ),
-          SizedBox(height: 8),
+          const SizedBox(height: 8),
           Text(
-            "Why am I not gaining more muscle although I eat and exercise a lot? :(",
-            style: TextStyle(fontSize: 14, color: Colors.black),
+            postContent,
+            style: const TextStyle(fontSize: 14, color: Colors.black),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              IconButton(
+                onPressed: () async {
+                  final docSnapshot =
+                  await FirebaseFirestore.instance.collection('forum').doc(postId).get();
+                  _toggleLike(docSnapshot);
+                },
+                icon: Icon(
+                  Icons.thumb_up,
+                  color: likedPosts.contains(postId) ? Colors.blue : Colors.grey,
+                ),
+              ),
+              Text('$likes Likes'),
+              TextButton.icon(
+                onPressed: () => _replyToPost(postId),
+                icon: const Icon(Icons.reply, color: Colors.grey), // Icon
+                label: const Text('Reply', style: TextStyle(color: Colors.grey)), // Text
+              ),
+            ],
           ),
         ],
       ),
