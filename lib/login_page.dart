@@ -63,7 +63,10 @@ class _LoginPageState extends State<LoginPage> {
       if (user != null) {
         // Check if user data already exists
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
-
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => RegisterPage()),
+        );
         if (!userDoc.exists) {
           // Store user data only if it's a new user
           await _firestore.collection('users').doc(user.uid).set({
