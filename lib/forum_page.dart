@@ -8,68 +8,87 @@ class ForumPage extends StatefulWidget {
   @override
   _ForumPageState createState() => _ForumPageState();
 }
-
+//test
 class _ForumPageState extends State<ForumPage> {
   final TextEditingController _postController = TextEditingController();
-
+  final List<DocumentSnapshot> _posts = [];
+  final int _postLimit = 10; // Number of posts per page
+  bool _isLoadingMore = false;
+  bool _hasMore = true;
   String? currentUserName;
-
-  // Track liked posts locally
+  String? currentUserId;
   Set<String> likedPosts = {};
+  Query _postQuery = FirebaseFirestore.instance
+      .collection('forum')
+      .orderBy('timestamp', descending: true);
 
   @override
   void initState() {
     super.initState();
-    _fetchCurrentUserName();
+    _fetchCurrentUserDetails();
+    _loadPosts();
   }
 
-  Future<void> _fetchCurrentUserName() async {
+  Future<void> _fetchCurrentUserDetails() async {
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user != null) {
-        final doc = await FirebaseFirestore.instance.collection('users').doc(user.uid).get();
+        final doc = await FirebaseFirestore.instance
+            .collection('users')
+            .doc(user.uid)
+            .get();
         setState(() {
           currentUserName = doc['fullname'];
+          currentUserId = user.uid;
         });
       }
     } catch (e) {
-      print("Error fetching user name: $e");
+      print("Error fetching user details: $e");
     }
   }
 
-  Future<void> _addPostToFirestore(String postContent) async {
+  Future<void> _toggleLike(String postId) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
-      if (user != null && currentUserName != null) {
-        await FirebaseFirestore.instance.collection('forum').add({
-          'content': postContent,
-          'fullname': currentUserName,
-          'timestamp': FieldValue.serverTimestamp(),
-          'likes': 0, // Default value for likes
-          'uid': user.uid,
+      if (user == null) return; // Ensure the user is logged in
+
+      final postRef = FirebaseFirestore.instance
+          .collection('forum')
+          .doc(postId)
+          .collection('post_likes')
+          .doc(user.uid);
+
+      final postSnapshot = await postRef.get();
+
+      if (postSnapshot.exists) {
+        // Unlike: Remove the user's UID from the `post_likes` nested collection
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final postDoc = FirebaseFirestore.instance.collection('forum').doc(postId);
+          final postSnapshot = await transaction.get(postDoc);
+
+          if (!postSnapshot.exists) return;
+
+          final currentLikes = postSnapshot['likes'] ?? 0;
+          transaction.update(postDoc, {'likes': currentLikes - 1});
+          transaction.delete(postRef);
         });
-      }
-    } catch (e) {
-      print("Error adding post to Firestore: $e");
-    }
-  }
 
-  Future<void> _toggleLike(DocumentSnapshot post) async {
-    try {
-      final postId = post.id;
-      final user = FirebaseAuth.instance.currentUser;
-      if (user == null) return; // Ensure user is authenticated.
-
-      // Toggle like/unlike
-      if (likedPosts.contains(postId)) {
-        // Unlike the post
-        await post.reference.update({'likes': post['likes'] - 1});
         setState(() {
           likedPosts.remove(postId);
         });
       } else {
-        // Like the post
-        await post.reference.update({'likes': post['likes'] + 1});
+        // Like: Add the user's UID to the `post_likes` nested collection
+        await FirebaseFirestore.instance.runTransaction((transaction) async {
+          final postDoc = FirebaseFirestore.instance.collection('forum').doc(postId);
+          final postSnapshot = await transaction.get(postDoc);
+
+          if (!postSnapshot.exists) return;
+
+          final currentLikes = postSnapshot['likes'] ?? 0;
+          transaction.update(postDoc, {'likes': currentLikes + 1});
+          transaction.set(postRef, {'uid': user.uid});
+        });
+
         setState(() {
           likedPosts.add(postId);
         });
@@ -79,14 +98,58 @@ class _ForumPageState extends State<ForumPage> {
     }
   }
 
-  void _replyToPost(String postId) {
-    // Implement reply functionality by navigating to the ReplyPage
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ReplyPage(postId: postId), // Navigate to the ReplyPage
-      ),
-    );
+  Future<void> _loadLikeState(String postId) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final postLikeRef = FirebaseFirestore.instance
+          .collection('forum')
+          .doc(postId)
+          .collection('post_likes')
+          .doc(user.uid);
+
+      final postLikeSnapshot = await postLikeRef.get();
+      if (postLikeSnapshot.exists) {
+        setState(() {
+          likedPosts.add(postId);
+        });
+      }
+    } catch (e) {
+      print("Error loading like state: $e");
+    }
+  }
+
+  Future<void> _loadPosts() async {
+    if (_isLoadingMore || !_hasMore) return;
+
+    setState(() {
+      _isLoadingMore = true;
+    });
+
+    try {
+      Query query = _posts.isEmpty
+          ? _postQuery.limit(_postLimit)
+          : _postQuery.startAfterDocument(_posts.last).limit(_postLimit);
+
+      final querySnapshot = await query.get();
+      final newPosts = querySnapshot.docs;
+
+      for (final post in newPosts) {
+        await _loadLikeState(post.id);
+      }
+
+      setState(() {
+        _posts.addAll(newPosts);
+        _hasMore = newPosts.length == _postLimit;
+      });
+    } catch (e) {
+      print("Error loading posts: $e");
+    } finally {
+      setState(() {
+        _isLoadingMore = false;
+      });
+    }
   }
 
   @override
@@ -116,83 +179,55 @@ class _ForumPageState extends State<ForumPage> {
                 IconButton(
                   icon: const Icon(Icons.settings),
                   onPressed: () {
-                    // Navigate to Settings Page or Open Settings
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SettingsPage(), // Navigate to the ReplyPage
+                        builder: (context) => SettingsPage(),
                       ),
                     );
                   },
                 ),
               ],
             ),
-            Container(
-              padding: const EdgeInsets.all(16.0),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8.0),
-                color: Colors.grey[200],
-              ),
-              child: Row(
-                children: [
-                  const CircleAvatar(
-                    backgroundColor: Colors.green,
-                    child: Icon(Icons.person, color: Colors.white),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextField(
-                      controller: _postController,
-                      decoration: const InputDecoration(
-                        hintText: "What's on your mind?",
-                        border: InputBorder.none,
-                      ),
-                    ),
-                  ),
-                  ElevatedButton(
-                    onPressed: () {
-                      _handlePostAction(context);
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.purple[200],
-                    ),
-                    child: const Text("Post"),
-                  ),
-                ],
-              ),
-            ),
+            _buildPostInputField(),
             const SizedBox(height: 16),
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('forum')
-                    .orderBy('timestamp', descending: true)
-                    .snapshots(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
+              child: NotificationListener<ScrollNotification>(
+                onNotification: (ScrollNotification scrollInfo) {
+                  if (scrollInfo.metrics.pixels ==
+                      scrollInfo.metrics.maxScrollExtent &&
+                      !_isLoadingMore) {
+                    _loadPosts();
                   }
-                  final posts = snapshot.data!.docs;
-                  return ListView.builder(
-                    itemCount: posts.length,
-                    itemBuilder: (context, index) {
-                      final post = posts[index].data() as Map<String, dynamic>;
-                      final postId = posts[index].id;
-                      return Column(
-                        children: [
-                          _buildForumCard(
-                            postId,
-                            post['fullname'] ?? 'Unknown',
-                            post['content'] ?? '',
-                            post['likes'] ?? 0,
-                            post['timestamp'] as Timestamp?,
-                          ),
-                          SizedBox(height: 8),
-                        ],
-                      );
-                    },
-                  );
+                  return false;
                 },
+                child: ListView.builder(
+                  itemCount: _posts.length + (_hasMore ? 1 : 0),
+                  itemBuilder: (context, index) {
+                    if (index == _posts.length) {
+                      return Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16.0),
+                          child: CircularProgressIndicator(),
+                        ),
+                      );
+                    }
+                    final post = _posts[index].data() as Map<String, dynamic>;
+                    final postId = _posts[index].id;
+                    return Column(
+                      children: [
+                        _buildForumCard(
+                          postId,
+                          post['fullname'] ?? 'Unknown',
+                          post['content'] ?? '',
+                          post['likes'] ?? 0,
+                          post['timestamp'] as Timestamp?,
+                        ),
+                        SizedBox(height: 8),
+                      ],
+                    );
+                  },
+                ),
               ),
             ),
           ],
@@ -201,7 +236,45 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
-  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp) {
+  Widget _buildPostInputField() {
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8.0),
+        color: Colors.grey[200],
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            backgroundColor: Colors.green,
+            child: Icon(Icons.person, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: _postController,
+              decoration: const InputDecoration(
+                hintText: "What's on your mind?",
+                border: InputBorder.none,
+              ),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _handlePostAction(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple[200],
+            ),
+            child: const Text("Post"),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildForumCard(String postId, String userName, String postContent,
+      int likes, Timestamp? timestamp) {
     String formattedTime = "Unknown Time";
     if (timestamp != null) {
       final dateTime = timestamp.toDate();
@@ -253,42 +326,8 @@ class _ForumPageState extends State<ForumPage> {
                 ),
               ),
               IconButton(
-                onPressed: () async {
-                  final user = FirebaseAuth.instance.currentUser;
-                  if (user != null) {
-                    final currentUserUid = user.uid;
-
-                    // Fetch the post document to get the post owner's UID
-                    final postDoc = await FirebaseFirestore.instance.collection('forum').doc(postId).get();
-                    final postOwnerUid = postDoc['uid']; // Fetch the post owner's UID
-
-                    // 1. Fetch the current user's follow list
-                    final currentUserDoc = await FirebaseFirestore.instance.collection('users').doc(currentUserUid).get();
-                    final currentUserFollowList = List<String>.from(currentUserDoc['follow_master.following'] ?? []);
-
-                    // 2. Check if the current user is already following the post author
-                    if (currentUserFollowList.contains(postOwnerUid)) {
-                      // If already following, show a message (can be a snackbar or a dialog)
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("You are already following $userName"))
-                      );
-                    } else {
-                      // 3. If not following, update the follow and follower lists
-                      await FirebaseFirestore.instance.collection('users').doc(currentUserUid).update({
-                        'follow_master.following': FieldValue.arrayUnion([postOwnerUid])
-                      });
-
-                      await FirebaseFirestore.instance.collection('users').doc(postOwnerUid).update({
-                        'follow_master.follower': FieldValue.arrayUnion([currentUserUid])
-                      });
-
-                      // Optionally, show feedback that the user is now following the post author
-                      ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("You are now following $userName"))
-                      );
-                      print("Followed $userName");
-                    }
-                  }
+                onPressed: () {
+                  print("Follow user: $userName");
                 },
                 icon: const Icon(Icons.person_add),
               ),
@@ -303,20 +342,24 @@ class _ForumPageState extends State<ForumPage> {
           Row(
             children: [
               IconButton(
-                onPressed: () async {
-                  final docSnapshot = await FirebaseFirestore.instance.collection('forum').doc(postId).get();
-                  _toggleLike(docSnapshot);
-                },
+                onPressed: () => _toggleLike(postId),
                 icon: Icon(
                   Icons.thumb_up,
                   color: likedPosts.contains(postId) ? Colors.blue : Colors.grey,
                 ),
               ),
-              Text('$likes Likes  '),
+              Text('$likes Likes'),
               TextButton.icon(
-                onPressed: () => _replyToPost(postId),
-                icon: const Icon(Icons.reply, color: Colors.grey), // Icon
-                label: const Text('Reply', style: TextStyle(color: Colors.grey)), // Text
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ReplyPage(postId: postId),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.reply, color: Colors.grey),
+                label: const Text('Reply', style: TextStyle(color: Colors.grey)),
               ),
             ],
           ),
@@ -325,6 +368,22 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
+  Future<void> _addPostToFirestore(String postContent) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user != null && currentUserName != null) {
+        await FirebaseFirestore.instance.collection('forum').add({
+          'content': postContent,
+          'fullname': currentUserName,
+          'timestamp': FieldValue.serverTimestamp(),
+          'likes': 0,
+          'uid': user.uid,
+        });
+      }
+    } catch (e) {
+      print("Error adding post to Firestore: $e");
+    }
+  }
 
   void _handlePostAction(BuildContext context) {
     String postContent = _postController.text.trim();
@@ -358,7 +417,8 @@ class _ForumPageState extends State<ForumPage> {
     );
   }
 
-  void _showErrorDialog(BuildContext context, {String message = "Please enter some text before posting."}) {
+  void _showErrorDialog(BuildContext context,
+      {String message = "Please enter some text before posting."}) {
     showDialog(
       context: context,
       builder: (BuildContext context) {
