@@ -86,6 +86,20 @@ class _LoginPageState extends State<LoginPage> {
               const SnackBar(content: Text('Sign-in failed. Please try again.')),
             );
           });
+
+          //create entry in weekly workout status if it's a new user
+          var currDate = DateTime.now();
+          await _firestore.collection('user_weekly_workout_progress').doc(user.uid).set({
+            'uid':user.uid,
+            'last_update': currDate.add(Duration(days:(7 - currDate.weekday + 1))).subtract(Duration(hours:currDate.hour, minutes:currDate.minute)), //set last updated to beginning to next week (Monday 00:00)
+            'day0':<String>[],
+            'day1':<String>[],
+            'day2':<String>[],
+            'day3':<String>[],
+            'day4':<String>[],
+            'day5':<String>[],
+            'day6':<String>[]
+          });
         }
       }
 
