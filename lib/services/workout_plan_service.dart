@@ -35,6 +35,7 @@ class WorkoutPlanService
 
   }
 
+  // return List<string> isinya nama workout yg di blackout di hari dayIdx
   Future<List<String>?> getUserProgressByDay(String? uid, int dayIdx) async
   {
     try
@@ -58,6 +59,7 @@ class WorkoutPlanService
     return null;
   }
 
+  // update List<string> workout yang di blackout di hari dayIdx
   Future<void> updateUserProgressByDay(String? uid, int dayIdx, String workoutName) async
   {
     try
@@ -83,6 +85,7 @@ class WorkoutPlanService
     }
   }
 
+  // reset workout yg di blackout kalau sudah awal minggu
   Future<void> checkUpdateUserProgress(String? uid) async
   {
     DateTime currDate = DateTime.now();
