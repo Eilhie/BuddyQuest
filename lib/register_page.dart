@@ -64,6 +64,10 @@ class RegisterPage extends StatelessWidget {
           'points': 0, // Default value
           'workout_type': '', // Default value
           'avatar': 'boy-default.png',
+          'follow_master': {
+            'following': <String>[],
+            'follower': <String>[]
+          }
         });
 
         var currDate = DateTime.now();

@@ -63,6 +63,10 @@ class _LoginPageState extends State<LoginPage> {
       if (user != null) {
         // Check if user data already exists
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => RegisterPage()),
+        );
         if (!userDoc.exists) {
           // Store user data only if it's a new user
           await _firestore.collection('users').doc(user.uid).set({
@@ -72,6 +76,10 @@ class _LoginPageState extends State<LoginPage> {
             'points': 0, // Default value
             'workout_type': '', // Default value
             'avatar': 'boy-default',
+            'follow_master': {
+              'following': <String>[],
+              'follower': <String>[]
+            }
           }).catchError((error) {
             print('Error storing user data: $error');
             ScaffoldMessenger.of(context).showSnackBar(
@@ -172,19 +180,49 @@ class _LoginPageState extends State<LoginPage> {
               child: const Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
             const SizedBox(height: 20),
+            // ini versi biru
+      /*
             ElevatedButton.icon(
               onPressed: _signInWithGoogle,
-              icon: const Icon(Icons.login),
-              label: const Text('Sign In with Google'),
+              icon: Image.asset(
+                'assets/logo/google_logo.png', // Path to your local image
+                height: 24, // Set height for the logo
+                width: 24,  // Set width for the logo
+              ),
+              label: const Text(
+                  'SIGN IN WITH GOOGLE',
+                style: TextStyle(color: Colors.white),
+              ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: Colors.blue, // Change button background to blue
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
                 minimumSize: const Size(double.infinity, 60),
               ),
-
+            ),
+      */
+            // ini versi putih
+            ElevatedButton.icon(
+              onPressed: _signInWithGoogle,
+              icon: Image.asset(
+                'assets/logo/google_logo.png', // Path to your local image
+                height: 24, // Set height for the logo
+                width: 24,  // Set width for the logo
+              ),
+              label: const Text(
+                'SIGN IN WITH GOOGLE',
+                style: TextStyle(color: Colors.black),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white, // Change button background to blue
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: const Size(double.infinity, 60),
+              ),
             ),
             const SizedBox(height: 20),
             TextButton(

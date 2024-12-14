@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'avatar_selection_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'BMI_page.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -129,9 +130,12 @@ class _SettingsPageState extends State<SettingsPage> {
               _buildProfileOption(
                 context,
                 icon: Icons.female,
-                title: 'Female, 20 years old',
+                title: 'BMI',
                 onTap: () {
-                  // Handle Age Edit
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => BMIPage()),
+                  );
                 },
               ),
               _buildProfileOption(
