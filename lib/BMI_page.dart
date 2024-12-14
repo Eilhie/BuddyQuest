@@ -1,5 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
+void main() => runApp(BMICalculator());
+
+class BMICalculator extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      home: BMIPage(),
+    );
+  }
+}
 
 class BMIPage extends StatefulWidget {
   @override
@@ -7,64 +17,45 @@ class BMIPage extends StatefulWidget {
 }
 
 class _BMIPageState extends State<BMIPage> {
-  final TextEditingController _heightController = TextEditingController();
-  final TextEditingController _weightController = TextEditingController();
+  int age = 30;
+  int weight = 78;
+  double height = 175;
+  double bmi = 0.0;
 
-  double? _bmi;
-  String _bmiCategory = "";
+  void calculateBMI() {
+    setState(() {
+      bmi = weight / ((height / 100) * (height / 100));
+    });
 
-  void _calculateBMI() {
-    final String heightText = _heightController.text;
-    final String weightText = _weightController.text;
-
-    if (heightText.isEmpty || weightText.isEmpty) {
-      _showErrorDialog("Please enter both height and weight.");
-      return;
-    }
-
-    try {
-      final double height = double.parse(heightText) / 100; // Convert to meters
-      final double weight = double.parse(weightText);
-
-      if (height <= 0 || weight <= 0) {
-        _showErrorDialog("Height and weight must be greater than zero.");
-        return;
-      }
-
-      setState(() {
-        _bmi = weight / (height * height);
-        _bmiCategory = _getBMICategory(_bmi!);
-      });
-    } catch (e) {
-      _showErrorDialog("Please enter valid numbers.");
-    }
-  }
-
-  String _getBMICategory(double bmi) {
-    if (bmi < 18.5) {
-      return "Underweight";
-    } else if (bmi >= 18.5 && bmi < 24.9) {
-      return "Normal weight";
-    } else if (bmi >= 25 && bmi < 29.9) {
-      return "Overweight";
-    } else {
-      return "Obesity";
-    }
-  }
-
-  void _showErrorDialog(String message) {
+    // Show a popup dialog with the results
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text("Error"),
-          content: Text(message),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          title: const Text(
+            "BMI Results",
+            style: TextStyle(fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                bmi.toStringAsFixed(2),
+                style: const TextStyle(fontSize: 40, fontWeight: FontWeight.bold, color: Colors.blue),
+              ),
+              const SizedBox(height: 10),
+              Text(
+                _getBMICategory(),
+                style: const TextStyle(fontSize: 20, color: Colors.green),
+              ),
+            ],
+          ),
           actions: [
             TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-              },
-              child: const Text("OK"),
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text("OK", style: TextStyle(fontSize: 16)),
             ),
           ],
         );
@@ -75,127 +66,97 @@ class _BMIPageState extends State<BMIPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("BMI Calculator"),
-        backgroundColor: Colors.deepPurpleAccent,
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            colors: [Colors.deepPurpleAccent, Colors.purpleAccent],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-          ),
-        ),
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+      body: SafeArea(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Custom Header
+            const SizedBox(height: 20),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                IconButton(
+                  icon: const Icon(Icons.arrow_back),
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                ),
                 const Text(
-                  "Calculate your Body Mass Index (BMI) easily!",
+                  'BMI Calculator',
                   style: TextStyle(
-                    fontSize: 20,
+                    fontSize: 24,
                     fontWeight: FontWeight.bold,
-                    color: Colors.white,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 20),
-                Card(
-                  elevation: 6,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(20.0),
-                    child: Column(
-                      children: [
-                        TextField(
-                          controller: _heightController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: "Height (cm)",
-                            prefixIcon: const Icon(Icons.height),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        TextField(
-                          controller: _weightController,
-                          keyboardType: TextInputType.number,
-                          decoration: InputDecoration(
-                            labelText: "Weight (kg)",
-                            prefixIcon: const Icon(Icons.line_weight),
-                            border: OutlineInputBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        ElevatedButton(
-                          onPressed: _calculateBMI,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.purple,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 16),
-                          ),
-                          child: const Text(
-                            "Calculate BMI",
-                            style: TextStyle(fontSize: 18, color: Colors.white),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ),
-                const SizedBox(height: 30),
-                AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 500),
-                  child: _bmi != null
-                      ? Card(
-                    key: ValueKey(_bmi),
-                    color: Colors.deepPurple.shade50,
-                    elevation: 6,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                    ),
-                    child: Padding(
-                      padding: const EdgeInsets.all(20.0),
-                      child: Column(
-                        children: [
-                          Text(
-                            "Your BMI: ${_bmi!.toStringAsFixed(1)}",
-                            style: const TextStyle(
-                              fontSize: 28,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.deepPurple,
-                            ),
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            "Category: $_bmiCategory",
-                            style: const TextStyle(
-                              fontSize: 20,
-                              color: Colors.black54,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  )
-                      : const SizedBox.shrink(),
-                ),
+                const SizedBox(width: 48), // To balance spacing
               ],
             ),
-          ),
+            const SizedBox(height: 20),
+            // Body Content
+            Expanded(
+              child: Padding(
+                padding: const EdgeInsets.all(20.0),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    // Age and Weight counters
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        _buildCounterCard("Age", age, () => setState(() => age++),
+                                () => setState(() => age--)),
+                        _buildCounterCard("Weight (KG)", weight,
+                                () => setState(() => weight++), () => setState(() => weight--)),
+                      ],
+                    ),
+                    // Height Slider
+                    Column(
+                      children: [
+                        const Text("Height (CM)", style: TextStyle(fontSize: 18)),
+                        Slider(
+                          value: height,
+                          min: 50,
+                          max: 300,
+                          onChanged: (val) => setState(() => height = val),
+                        ),
+                        Text("${height.toInt()} CM", style: const TextStyle(fontSize: 24)),
+                      ],
+                    ),
+                    // Calculate BMI Button
+                    ElevatedButton(
+                      onPressed: calculateBMI,
+                      child: const Text("Calculate BMI"),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
+  }
+
+  Widget _buildCounterCard(
+      String label, int value, VoidCallback increment, VoidCallback decrement) {
+    return Column(
+      children: [
+        Text(label, style: const TextStyle(fontSize: 18)),
+        Row(
+          children: [
+            IconButton(icon: const Icon(Icons.remove), onPressed: decrement),
+            Text("$value", style: const TextStyle(fontSize: 24)),
+            IconButton(icon: const Icon(Icons.add), onPressed: increment),
+          ],
+        ),
+      ],
+    );
+  }
+
+  String _getBMICategory() {
+    if (bmi < 18.5) return "Underweight";
+    if (bmi >= 18.5 && bmi < 25) return "Normal BMI";
+    if (bmi >= 25 && bmi < 30) return "Overweight";
+    return "Obesity";
   }
 }
