@@ -23,6 +23,9 @@ class _LoginPageState extends State<LoginPage> {
   // Initialize FirebaseFirestore
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // Variable to toggle password visibility
+  bool _isPasswordVisible = false;
+
   // Login with Email & Password
   Future<void> _signInWithEmailPassword() async {
     try {
@@ -63,10 +66,7 @@ class _LoginPageState extends State<LoginPage> {
       if (user != null) {
         // Check if user data already exists
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => RegisterPage()),
-        );
+
         if (!userDoc.exists) {
           // Store user data only if it's a new user
           await _firestore.collection('users').doc(user.uid).set({
@@ -87,18 +87,19 @@ class _LoginPageState extends State<LoginPage> {
             );
           });
 
-          //create entry in weekly workout status if it's a new user
+          // Create entry in weekly workout status if it's a new user
           var currDate = DateTime.now();
           await _firestore.collection('user_weekly_workout_progress').doc(user.uid).set({
-            'uid':user.uid,
-            'last_update': currDate.add(Duration(days:(7 - currDate.weekday + 1))).subtract(Duration(hours:currDate.hour, minutes:currDate.minute)), //set last updated to beginning to next week (Monday 00:00)
-            'day0':<String>[],
-            'day1':<String>[],
-            'day2':<String>[],
-            'day3':<String>[],
-            'day4':<String>[],
-            'day5':<String>[],
-            'day6':<String>[]
+            'uid': user.uid,
+            'last_update': currDate.add(Duration(days: (7 - currDate.weekday + 1)))
+                .subtract(Duration(hours: currDate.hour, minutes: currDate.minute)), // Set last updated to the start of next week
+            'day0': <String>[],
+            'day1': <String>[],
+            'day2': <String>[],
+            'day3': <String>[],
+            'day4': <String>[],
+            'day5': <String>[],
+            'day6': <String>[]
           });
         }
       }
@@ -119,7 +120,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -128,7 +128,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(padding: EdgeInsets.all(30.0)),
+            const SizedBox(height: 30),
             const Text(
               'Sign In',
               style: TextStyle(
@@ -138,7 +138,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 30),
             const Text(
-
               "Email",
               style: TextStyle(
                 fontSize: 18,
@@ -151,7 +150,7 @@ class _LoginPageState extends State<LoginPage> {
                 hintText: 'Enter your email',
               ),
             ),
-            const Padding(padding: EdgeInsets.all(10.0)),
+            const SizedBox(height: 20),
             const Text(
               "Password",
               style: TextStyle(
@@ -161,62 +160,48 @@ class _LoginPageState extends State<LoginPage> {
             ),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(
+              obscureText: !_isPasswordVisible, // Toggle password visibility
+              decoration: InputDecoration(
                 hintText: 'Enter your password',
-
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: _signInWithEmailPassword,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0x9954473F),
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                minimumSize: Size(double.infinity, 60),
-              ),
-              child: const Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            ),
-            const SizedBox(height: 20),
-            // ini versi biru
-      /*
-            ElevatedButton.icon(
-              onPressed: _signInWithGoogle,
-              icon: Image.asset(
-                'assets/logo/google_logo.png', // Path to your local image
-                height: 24, // Set height for the logo
-                width: 24,  // Set width for the logo
-              ),
-              label: const Text(
-                  'SIGN IN WITH GOOGLE',
-                style: TextStyle(color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue, // Change button background to blue
+                backgroundColor: const Color(0x9954473F),
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
                 minimumSize: const Size(double.infinity, 60),
               ),
+              child: const Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
             ),
-      */
-            // ini versi putih
+            const SizedBox(height: 20),
             ElevatedButton.icon(
               onPressed: _signInWithGoogle,
               icon: Image.asset(
                 'assets/logo/google_logo.png', // Path to your local image
-                height: 24, // Set height for the logo
-                width: 24,  // Set width for the logo
+                height: 24,
+                width: 24,
               ),
               label: const Text(
                 'SIGN IN WITH GOOGLE',
                 style: TextStyle(color: Colors.black),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white, // Change button background to blue
+                backgroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
