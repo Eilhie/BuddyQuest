@@ -145,10 +145,41 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                             }
                             else
                             {
-                              if(snapshot.data?[0] == null)
-                              {
-                                return Text("Rest Bro");
+                              if(snapshot.data?[0] == null) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.beach_access, // Icon representing rest, like a beach or vacation icon
+                                        size: 100,
+                                        color: Colors.deepPurple,
+                                      ),
+                                      SizedBox(height: 20),
+                                      Text(
+                                        "Rest Day",
+                                        style: TextStyle(
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.deepPurple,
+                                        ),
+                                      ),
+                                      SizedBox(height: 10),
+                                      Text(
+                                        "\"Take time to relax. Recovery is just as important as the workout itself.\"",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontStyle: FontStyle.italic,
+                                          color: Colors.grey[700],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                );
                               }
+
                               Map<String, dynamic>? exercisesOfDay = snapshot.data?[0] as Map<String, dynamic>;
                               List<String> doneExercisesOfDay = snapshot.data?[1] as List<String>;
                               print(doneExercisesOfDay);
@@ -208,7 +239,7 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                                         child:Card(
                                             elevation: 3,
                                             margin: EdgeInsets.symmetric(vertical: 8),
-                                            color: currIsBlacked ? Colors.black.withOpacity(0.5) : null, // Blackout effect for individual card
+                                            color: currIsBlacked ? Colors.green.withOpacity(0.5) : null, // Blackout effect for individual card
                                             child: ListTile(
                                                 leading: Icon(Icons.fitness_center, color: Colors.deepPurple),
                                                 title:
