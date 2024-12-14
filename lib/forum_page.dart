@@ -8,7 +8,7 @@ class ForumPage extends StatefulWidget {
   @override
   _ForumPageState createState() => _ForumPageState();
 }
-//test
+
 class _ForumPageState extends State<ForumPage> {
   final TextEditingController _postController = TextEditingController();
   final List<DocumentSnapshot> _posts = [];
@@ -18,6 +18,7 @@ class _ForumPageState extends State<ForumPage> {
   String? currentUserName;
   String? currentUserId;
   Set<String> likedPosts = {};
+  Set<String> followingUsers = {};
   Query _postQuery = FirebaseFirestore.instance
       .collection('forum')
       .orderBy('timestamp', descending: true);
@@ -27,6 +28,7 @@ class _ForumPageState extends State<ForumPage> {
     super.initState();
     _fetchCurrentUserDetails();
     _loadPosts();
+    _loadFollowingUsers();
   }
 
   Future<void> _fetchCurrentUserDetails() async {
@@ -47,6 +49,85 @@ class _ForumPageState extends State<ForumPage> {
     }
   }
 
+  Future<void> _loadFollowingUsers() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      final followingSnapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('following')
+          .get();
+
+      setState(() {
+        followingUsers = followingSnapshot.docs.map((doc) => doc.id).toSet();
+      });
+    } catch (e) {
+      print("Error loading following users: $e");
+    }
+  }
+
+  Future<void> _toggleFollow(String userId, String userName) async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null || userId == user.uid) return; // Prevent self-follow
+
+      final followingRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('following')
+          .doc(userId);
+
+      final followersRef = FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .collection('followers')
+          .doc(user.uid);
+
+      if (followingUsers.contains(userId)) {
+        // Unfollow
+        await followingRef.delete();
+        await followersRef.delete();
+        setState(() {
+          followingUsers.remove(userId);
+        });
+
+        // Show Snackbar for unfollowing
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("You unfollowed $userName."),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      } else {
+        // Follow
+        await followingRef.set({'uid': userId});
+        await followersRef.set({'uid': user.uid});
+        setState(() {
+          followingUsers.add(userId);
+        });
+
+        // Show Snackbar for following
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("You are now following $userName."),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      print("Error toggling follow: $e");
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("An error occurred. Please try again."),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
+
   Future<void> _toggleLike(String postId) async {
     try {
       final user = FirebaseAuth.instance.currentUser;
@@ -61,7 +142,7 @@ class _ForumPageState extends State<ForumPage> {
       final postSnapshot = await postRef.get();
 
       if (postSnapshot.exists) {
-        // Unlike: Remove the user's UID from the `post_likes` nested collection
+        // Unlike
         await FirebaseFirestore.instance.runTransaction((transaction) async {
           final postDoc = FirebaseFirestore.instance.collection('forum').doc(postId);
           final postSnapshot = await transaction.get(postDoc);
@@ -77,7 +158,7 @@ class _ForumPageState extends State<ForumPage> {
           likedPosts.remove(postId);
         });
       } else {
-        // Like: Add the user's UID to the `post_likes` nested collection
+        // Like
         await FirebaseFirestore.instance.runTransaction((transaction) async {
           final postDoc = FirebaseFirestore.instance.collection('forum').doc(postId);
           final postSnapshot = await transaction.get(postDoc);
@@ -222,6 +303,7 @@ class _ForumPageState extends State<ForumPage> {
                           post['content'] ?? '',
                           post['likes'] ?? 0,
                           post['timestamp'] as Timestamp?,
+                          post['uid'] ?? '',
                         ),
                         SizedBox(height: 8),
                       ],
@@ -274,7 +356,7 @@ class _ForumPageState extends State<ForumPage> {
   }
 
   Widget _buildForumCard(String postId, String userName, String postContent,
-      int likes, Timestamp? timestamp) {
+      int likes, Timestamp? timestamp, String userId) {
     String formattedTime = "Unknown Time";
     if (timestamp != null) {
       final dateTime = timestamp.toDate();
@@ -326,10 +408,15 @@ class _ForumPageState extends State<ForumPage> {
                 ),
               ),
               IconButton(
-                onPressed: () {
-                  print("Follow user: $userName");
-                },
-                icon: const Icon(Icons.person_add),
+                onPressed: () => _toggleFollow(userId, userName),
+                icon: Icon(
+                  followingUsers.contains(userId)
+                      ? Icons.person_remove
+                      : Icons.person_add,
+                  color: followingUsers.contains(userId)
+                      ? Colors.red
+                      : Colors.blue,
+                ),
               ),
             ],
           ),
