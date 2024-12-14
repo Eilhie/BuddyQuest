@@ -253,9 +253,42 @@ class _ForumPageState extends State<ForumPage> {
                 ),
               ),
               IconButton(
-                onPressed: () {
-                  // Follow user action
-                  print("Follow user: $userName");
+                onPressed: () async {
+                  final user = FirebaseAuth.instance.currentUser;
+                  if (user != null) {
+                    final currentUserUid = user.uid;
+
+                    // Fetch the post document to get the post owner's UID
+                    final postDoc = await FirebaseFirestore.instance.collection('forum').doc(postId).get();
+                    final postOwnerUid = postDoc['uid']; // Fetch the post owner's UID
+
+                    // 1. Fetch the current user's follow list
+                    final currentUserDoc = await FirebaseFirestore.instance.collection('users').doc(currentUserUid).get();
+                    final currentUserFollowList = List<String>.from(currentUserDoc['follow_master.following'] ?? []);
+
+                    // 2. Check if the current user is already following the post author
+                    if (currentUserFollowList.contains(postOwnerUid)) {
+                      // If already following, show a message (can be a snackbar or a dialog)
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("You are already following $userName"))
+                      );
+                    } else {
+                      // 3. If not following, update the follow and follower lists
+                      await FirebaseFirestore.instance.collection('users').doc(currentUserUid).update({
+                        'follow_master.following': FieldValue.arrayUnion([postOwnerUid])
+                      });
+
+                      await FirebaseFirestore.instance.collection('users').doc(postOwnerUid).update({
+                        'follow_master.follower': FieldValue.arrayUnion([currentUserUid])
+                      });
+
+                      // Optionally, show feedback that the user is now following the post author
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text("You are now following $userName"))
+                      );
+                      print("Followed $userName");
+                    }
+                  }
                 },
                 icon: const Icon(Icons.person_add),
               ),
@@ -291,6 +324,7 @@ class _ForumPageState extends State<ForumPage> {
       ),
     );
   }
+
 
   void _handlePostAction(BuildContext context) {
     String postContent = _postController.text.trim();

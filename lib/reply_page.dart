@@ -1,5 +1,3 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'setting_page.dart';
 
@@ -14,80 +12,16 @@ class ReplyPage extends StatefulWidget {
 
 class _ReplyPageState extends State<ReplyPage> {
   final TextEditingController _replyController = TextEditingController();
-  String userName = "";
-  String postContent = "";
-  Timestamp? postTimestamp;
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchPostDetails();
-  }
-
-  Future<void> _fetchPostDetails() async {
-    try {
-      final postDoc = await FirebaseFirestore.instance
-          .collection('forum')
-          .doc(widget.postId)
-          .get();
-
-      if (postDoc.exists) {
-        setState(() {
-          userName = postDoc['fullname'] ?? "Unknown";
-          postContent = postDoc['content'] ?? "";
-          postTimestamp = postDoc['timestamp'];
-        });
-      }
-    } catch (e) {
-      print("Error fetching post details: $e");
-    }
-  }
-
-  Future<void> _addReplyToFirestore(String replyContent) async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-
-      if (user != null) {
-        final userDoc = await FirebaseFirestore.instance
-            .collection('users')
-            .doc(user.uid)
-            .get();
-        final currentUserName = userDoc['fullname'];
-
-        await FirebaseFirestore.instance
-            .collection('forum')
-            .doc(widget.postId)
-            .collection('replies')
-            .add({
-          'uid': user.uid,
-          'fullname': currentUserName,
-          'content': replyContent,
-          'timestamp': FieldValue.serverTimestamp(),
-        });
-
-        // Clear the reply input field after posting
-        _replyController.clear();
-      }
-    } catch (e) {
-      print("Error adding reply to Firestore: $e");
-    }
-  }
-
-  Stream<QuerySnapshot> _getRepliesStream() {
-    return FirebaseFirestore.instance
-        .collection('forum')
-        .doc(widget.postId)
-        .collection('replies')
-        .orderBy('timestamp', descending: true)
-        .snapshots();
-  }
-
-  String _formatTimestamp(Timestamp? timestamp) {
-    if (timestamp == null) return "Unknown Time";
-    final dateTime = timestamp.toDate();
-    return "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year} "
-        "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
-  }
+  // Dummy Data for the original post and replies
+  String userName = "John Doe";
+  String postContent = "This is the content of the original post!";
+  String postTime = "12-12-2024 14:30"; // Example time
+  List<String> replies = [
+    "Great post!",
+    "I totally agree with this!",
+    "This is really helpful, thanks!"
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -116,10 +50,11 @@ class _ReplyPageState extends State<ReplyPage> {
                 IconButton(
                   icon: const Icon(Icons.settings),
                   onPressed: () {
+                    // Navigate to Settings Page or Open Settings
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SettingsPage(),
+                        builder: (context) => SettingsPage(), // Navigate to the ReplyPage
                       ),
                     );
                   },
@@ -127,7 +62,7 @@ class _ReplyPageState extends State<ReplyPage> {
               ],
             ),
             SizedBox(height: 32),
-            // Display the main post
+            // Display the main post in a similar style as forum card
             Container(
               padding: const EdgeInsets.all(12.0),
               decoration: BoxDecoration(
@@ -164,9 +99,8 @@ class _ReplyPageState extends State<ReplyPage> {
                               ),
                             ),
                             Text(
-                              _formatTimestamp(postTimestamp),
-                              style:
-                              const TextStyle(fontSize: 12, color: Colors.grey),
+                              postTime,
+                              style: const TextStyle(fontSize: 12, color: Colors.grey),
                             ),
                           ],
                         ),
@@ -178,11 +112,14 @@ class _ReplyPageState extends State<ReplyPage> {
                     postContent,
                     style: const TextStyle(fontSize: 14, color: Colors.black),
                   ),
+                  SizedBox(height: 16),
                 ],
               ),
             ),
+
             SizedBox(height: 16),
-            // TextField to write a reply
+
+            // TextField to write a reply with styling
             Container(
               padding: const EdgeInsets.all(16.0),
               decoration: BoxDecoration(
@@ -198,7 +135,6 @@ class _ReplyPageState extends State<ReplyPage> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: TextField(
-                      controller: _replyController,
                       decoration: const InputDecoration(
                         hintText: "What's on your mind?",
                         border: InputBorder.none,
@@ -207,10 +143,6 @@ class _ReplyPageState extends State<ReplyPage> {
                   ),
                   ElevatedButton(
                     onPressed: () {
-                      final replyContent = _replyController.text.trim();
-                      if (replyContent.isNotEmpty) {
-                        _addReplyToFirestore(replyContent);
-                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.purple[200],
@@ -221,43 +153,28 @@ class _ReplyPageState extends State<ReplyPage> {
               ),
             ),
             SizedBox(height: 16),
-            // Display the list of replies
+
+            // Display the list of replies in a similar style as the posts in forum
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: _getRepliesStream(),
-                builder: (context, snapshot) {
-                  if (!snapshot.hasData) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-
-                  final replies = snapshot.data!.docs;
-
-                  if (replies.isEmpty) {
-                    return Center(child: Text("No replies yet."));
-                  }
-
-                  return ListView.builder(
-                    itemCount: replies.length,
-                    itemBuilder: (context, index) {
-                      final reply = replies[index];
-                      final replyData = reply.data() as Map<String, dynamic>;
-                      return _buildReplyCard(
-                        replyData['fullname'] ?? "Unknown User",
-                        replyData['content'] ?? "",
-                        replyData['timestamp'] as Timestamp?,
-                      );
-                    },
+              child: ListView.builder(
+                itemCount: replies.length,
+                itemBuilder: (context, index) {
+                  return _buildReplyCard(
+                    "Replying User",  // Use the actual user's name for each reply
+                    replies[index],   // The content of the reply
                   );
                 },
               ),
-            ),
+            )
           ],
         ),
       ),
     );
   }
 
-  Widget _buildReplyCard(String userName, String replyContent, Timestamp? timestamp) {
+  // Custom method to build a reply card similar to the forum post
+  // Custom method to build a reply card similar to the forum post
+  Widget _buildReplyCard(String userName, String replyContent) {
     return Container(
       padding: const EdgeInsets.all(12.0),
       margin: const EdgeInsets.only(bottom: 8.0),
@@ -276,6 +193,7 @@ class _ReplyPageState extends State<ReplyPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Display the reply user (removed timestamp)
           Row(
             children: [
               const CircleAvatar(
@@ -294,21 +212,18 @@ class _ReplyPageState extends State<ReplyPage> {
                         fontSize: 16,
                       ),
                     ),
-                    Text(
-                      _formatTimestamp(timestamp),
-                      style:
-                      const TextStyle(fontSize: 12, color: Colors.grey),
-                    ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 8),
+          // Display the reply content
           Text(
             replyContent,
             style: const TextStyle(fontSize: 14, color: Colors.black),
           ),
+          const SizedBox(height: 8),
         ],
       ),
     );
