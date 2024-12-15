@@ -164,7 +164,7 @@ class UserService
         }
         lastStreakUpdate = currDate;
         int currPoints = objMap["points"];
-        int newPoints = currPoints + ((pointsToAdd + 0.1*min(currStreak, 7)*pointsToAdd) as int);
+        int newPoints = currPoints + ((pointsToAdd + 0.1*min(currStreak-1, 7)*pointsToAdd) as int);
         objMap["points"] = newPoints;
         objMap["lastStreakUpdate"] = lastStreakUpdate;
         objMap["currentStreak"] = currStreak;
