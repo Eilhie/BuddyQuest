@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'avatar_selection_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'setting_page.dart';
