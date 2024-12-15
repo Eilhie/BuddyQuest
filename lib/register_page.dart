@@ -62,19 +62,13 @@ class _RegisterPageState extends State<RegisterPage> {
       User? user = userCredential.user;
 
       if (user != null) {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => CalibrationPage()),
-        );
-        var workout_type = await userService.getUserWorkoutCategory(user.uid);
-
         // Store user data in Firestore
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'fullname': fullName,
           'email': email,
           'points': 0, // Default value
-          'workout_type': workout_type,
+          'workout_type': "",
           'avatar': 'boy-default.png',
           'follow_master': {
             'following': <String>[],
@@ -99,6 +93,11 @@ class _RegisterPageState extends State<RegisterPage> {
           'day5': <String>[],
           'day6': <String>[]
         });
+
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => CalibrationPage()),
+        );
 
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("Account created successfully!"),

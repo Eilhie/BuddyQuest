@@ -70,18 +70,13 @@ class _LoginPageState extends State<LoginPage> {
         // Check if user data already exists
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
         if (!userDoc.exists) {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => CalibrationPage()),
-          );
-          var workout_type = await userService.getUserWorkoutCategory(user.uid);
           // Store user data only if it's a new user
           await _firestore.collection('users').doc(user.uid).set({
             'uid': user.uid,
             'fullname': user.displayName ?? '',
             'email': user.email,
             'points': 0, // Default value
-            'workout_type': workout_type, // Default value
+            'workout_type': "", // Default value
             'avatar': 'boy-default',
             'follow_master': {
               'following': <String>[],
@@ -108,6 +103,11 @@ class _LoginPageState extends State<LoginPage> {
             'day5': <String>[],
             'day6': <String>[]
           });
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => CalibrationPage()),
+          );
         }
       }
 
