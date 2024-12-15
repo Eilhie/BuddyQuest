@@ -1,10 +1,12 @@
 import 'dart:core';
 import 'dart:math';
 import "package:cloud_firestore/cloud_firestore.dart";
+import 'package:software_engineering_project/services/workout_plan_service.dart';
 
 class UserService
 {
   final user_collection = FirebaseFirestore.instance.collection("users");
+  final workoutService = WorkoutPlanService();
 
   Future<void> registerUserEmail() async {
 
@@ -88,15 +90,16 @@ class UserService
         Map<String, dynamic> objMap = querySnapshot.data() as Map<String, dynamic>;
         DateTime lastStreakUpdate = DateTime.fromMillisecondsSinceEpoch((objMap["lastStreakUpdate"] as Timestamp).seconds * 1000);
         DateTime currDate = DateTime.now();
+        String workoutCategory = (await this.getUserWorkoutCategory(uid))??"";
+        DateTime nextWorkoutDate = (await workoutService.getNextWorkoutDay(workoutCategory, lastStreakUpdate)??DateTime.now());
         //streak broken
         int currStreak = objMap["currentStreak"];
-        if(currDate.difference(lastStreakUpdate).inDays>=1)
+        if(currDate.difference(nextWorkoutDate).inDays>=1)
         {
           currStreak = 0;
+          objMap["currentStreak"] = currStreak;
+          collectionReference.update(objMap);
         }
-        objMap["currentStreak"] = currStreak;
-        collectionReference.update(objMap);
-
       }
     }
     catch(e)
@@ -137,25 +140,31 @@ class UserService
         Map<String, dynamic> objMap = querySnapshot.data() as Map<String, dynamic>;
         DateTime lastStreakUpdate = DateTime.fromMillisecondsSinceEpoch((objMap["lastStreakUpdate"] as Timestamp).seconds * 1000);
         DateTime currDate = DateTime.now();
+        String workoutCategory = (await this.getUserWorkoutCategory(uid))??"";
+        DateTime nextWorkoutDate = (await workoutService.getNextWorkoutDay(workoutCategory, lastStreakUpdate)??DateTime.now());
         //streak broken
-        int currStreak;
+        int currStreak = objMap["currentStreak"];
         int highestStreak = objMap["highestStreak"];
-        if(currDate.difference(lastStreakUpdate).inDays>=1)
+        if(currDate.difference(nextWorkoutDate).inDays>=1)
         {
           currStreak = 1;
         }
         else // still streaking
         {
-          currStreak = objMap["currentStreak"];
-          if(lastStreakUpdate.weekday != currDate.weekday)
+          var workoutToday = await workoutService.getExcerciseByCategoryDay(workoutCategory, currDate.weekday-1);
+          if(workoutToday != null)// if not rest day
           {
-            currStreak+=1;
+            currStreak = objMap["currentStreak"];
+            if(lastStreakUpdate.weekday != currDate.weekday)
+            {
+              currStreak+=1;
+            }
+            highestStreak = max(highestStreak,currStreak);
           }
-          highestStreak = max(highestStreak,currStreak);
         }
         lastStreakUpdate = currDate;
         int currPoints = objMap["points"];
-        int newPoints = currPoints + ((pointsToAdd + 0.1*min(currStreak-1, 0.7)*pointsToAdd) as int);
+        int newPoints = currPoints + ((pointsToAdd + 0.1*min(currStreak, 7)*pointsToAdd) as int);
         objMap["points"] = newPoints;
         objMap["lastStreakUpdate"] = lastStreakUpdate;
         objMap["currentStreak"] = currStreak;
@@ -165,6 +174,7 @@ class UserService
     }
     catch(e)
     {
+      print("Error adding user points");
       print(e);
     }
   }

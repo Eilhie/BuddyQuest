@@ -192,7 +192,6 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
 
                                     Map<String, dynamic>? exercisesOfDay = snapshot.data?[0] as Map<String, dynamic>;
                                     List<String> doneExercisesOfDay = snapshot.data?[1] as List<String>;
-                                    print(doneExercisesOfDay);
                                     return ListView.builder(
                                         itemCount: exercisesOfDay["exercises"].length ?? 0,
                                         itemBuilder: (context, index)
@@ -228,6 +227,7 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                                                           TextButton(
                                                             onPressed: () async {
                                                               await workoutPlanService.updateUserProgressByDay(currUid, listOfDays.indexWhere((dow)=>dow==selectedDay), currIndexExercise["name"]);
+                                                              await userService.addUserPoints(currUid??"", 50);
                                                               //blackout current card
                                                               Navigator.pop(context); // Close the dialog
                                                               setState(() {});
