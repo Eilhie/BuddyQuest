@@ -47,10 +47,38 @@ class EditProfilePage extends StatelessWidget {
               const SizedBox(height: 20),
 
               // Profile Picture Section
-              CircleAvatar(
-                radius: 64,
-                backgroundImage: const AssetImage('assets/profile_picture.png'),
-                backgroundColor: Colors.grey[300],
+              FutureBuilder<DocumentSnapshot>(
+                future: _getCurrentUserProfile(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return CircleAvatar(
+                      radius: 64,
+                      backgroundColor: Colors.grey[300],
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  if (snapshot.hasError) {
+                    return CircleAvatar(
+                      radius: 64,
+                      backgroundImage: AssetImage('assets/profiles/default-avatar.png'),
+                      backgroundColor: Colors.grey[300],
+                    );
+                  }
+                  if (snapshot.hasData && snapshot.data!.exists) {
+                    final data = snapshot.data!.data() as Map<String, dynamic>;
+                    final avatar = data['avatar'] ?? 'default-avatar.png';
+                    return CircleAvatar(
+                      radius: 64,
+                      backgroundImage: AssetImage('assets/profiles/$avatar'),
+                      backgroundColor: Colors.grey[300],
+                    );
+                  }
+                  return CircleAvatar(
+                    radius: 64,
+                    backgroundImage: AssetImage('assets/profiles/default-avatar.png'),
+                    backgroundColor: Colors.grey[300],
+                  );
+                },
               ),
               const SizedBox(height: 20),
 
