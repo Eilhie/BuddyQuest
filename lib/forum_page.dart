@@ -270,6 +270,7 @@ class _ForumPageState extends State<ForumPage> {
                 ),
               ],
             ),
+            const SizedBox(height: 8,),
             _buildPostInputField(),
             const SizedBox(height: 16),
             Expanded(
@@ -448,6 +449,47 @@ class _ForumPageState extends State<ForumPage> {
                 icon: const Icon(Icons.reply, color: Colors.grey),
                 label: const Text('Reply', style: TextStyle(color: Colors.grey)),
               ),
+              TextButton.icon(
+                onPressed: () {
+                  // Show confirmation dialog
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Report Post'),
+                        content: const Text('Are you sure you want to report this post?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the dialog
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the dialog
+
+                              // Show "Report Submitted" snackbar
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Report Submitted'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+
+                              // Add additional logic for reporting the post here (e.g., API call)
+                            },
+                            child: const Text('Report'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                icon: const Icon(Icons.reply, color: Colors.red),
+                label: const Text('Report', style: TextStyle(color: Colors.red)),
+              ),
+
             ],
           ),
         ],

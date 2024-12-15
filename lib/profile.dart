@@ -135,12 +135,6 @@ class _ProfilePageState extends State<ProfilePage> {
               ),
             ),
             SizedBox(height: 5),
-            Text(
-              '@username',
-              style: TextStyle(
-                fontSize: 18,
-              ),
-            ),
             Row(
               mainAxisAlignment: MainAxisAlignment.start,
               children: [
