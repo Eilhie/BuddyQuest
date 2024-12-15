@@ -135,7 +135,7 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Padding(
+      body: _isLoadingRegister?Center(child:CircularProgressIndicator()):Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +250,10 @@ class _RegisterPageState extends State<RegisterPage> {
             ElevatedButton(
               onPressed: () async
               {
-                _isLoadingRegister ? null : await _registerUser(context);
+                _isLoadingRegister ? null : _registerUser(context);
+                setState(() {
+
+                });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0x9954473F),
