@@ -5,6 +5,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'forum_page.dart';
 import 'reply_page.dart';
 
+
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:software_engineering_project/services/workout_plan_service.dart';
+import 'services/user_sevice.dart';
+import 'package:intl/intl.dart';
+
+
 class HomePage extends StatefulWidget {
   @override
   _HomePageState createState() => _HomePageState();
@@ -18,12 +26,34 @@ class _HomePageState extends State<HomePage> {
   String? currentUserId; // Track the logged-in user's ID
   bool _isLoadingPosts = true;
 
+  WorkoutPlanService workoutPlanService = WorkoutPlanService();
+  UserService userService = UserService();
+  User? currentUser;
+  String? currUid;
+
+  final List<String> listOfDays = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+  final Map<String, List<String>> dailyExercises = {
+    "Monday": ["Push-ups", "Squats", "Plank"],
+    "Tuesday": ["Burpees", "Jumping Jacks", "Mountain Climbers"],
+    "Wednesday": ["Lunges", "Deadlifts", "Crunches"],
+    "Thursday": ["Pull-ups", "Bench Press", "Tricep Dips"],
+    "Friday": ["Bicep Curls", "Leg Raises", "Russian Twists"],
+    "Saturday": ["Yoga Stretches", "Pilates Core", "Foam Rolling"],
+    "Sunday": ["Rest", "Light Walk", "Stretching"],
+  };
+
+  String selectedDay = DateFormat('EEEE').format(DateTime.now()); // Select day of week now
+
   @override
   void initState() {
     super.initState();
     _loadUserFirstName();
     _fetchCurrentUserId();
     _fetchLatestPosts();
+
+    currentUser = FirebaseAuth.instance.currentUser;
+    currUid = currentUser?.uid??"";
+
   }
 
   // Fetch the current user's first name
@@ -193,6 +223,154 @@ class _HomePageState extends State<HomePage> {
                   color: Colors.black,
                 ),
               ),
+
+              const SizedBox(height: 16),
+              // Today's plan from rici api
+
+              FutureBuilder(
+                future: userService.getUserWorkoutCategory(currUid ?? ""),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator());
+                  }
+                  return FutureBuilder(
+                    future: Future.wait([
+                      workoutPlanService.getExcerciseByCategoryDay(snapshot.data ?? "", listOfDays.indexWhere((dow) => dow == selectedDay)),
+                      workoutPlanService.getUserProgressByDay(currUid, listOfDays.indexWhere((dow) => dow == selectedDay))
+                    ]),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      } else {
+                        if (snapshot.data?[0] == null) {
+                          return Center(
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              crossAxisAlignment: CrossAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.beach_access, // Icon representing rest, like a beach or vacation icon
+                                  size: 60,
+                                  color: Colors.deepPurple,
+                                ),
+                                SizedBox(width: 20), // Spacing between icon and text
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      "Rest Day",
+                                      style: TextStyle(
+                                        fontSize: 30,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.deepPurple,
+                                      ),
+                                    ),
+                                    SizedBox(height: 10),
+                                    Text(
+                                      "\"Take time to relax. Recovery is important.\"",
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontStyle: FontStyle.italic,
+                                        color: Colors.grey[700],
+                                      ),
+                                      textAlign: TextAlign.left,
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+
+
+                        Map<String, dynamic>? exercisesOfDay = snapshot.data?[0] as Map<String, dynamic>;
+                        List<String> doneExercisesOfDay = snapshot.data?[1] as List<String>;
+
+                        return ListView.builder(
+                          itemCount: exercisesOfDay["exercises"].length ?? 0,
+                          itemBuilder: (context, index) {
+                            Map<String, dynamic> currIndexExercise = exercisesOfDay["exercises"][index];
+                            String? exerciseDetails = currIndexExercise.containsKey("details") ? currIndexExercise["details"] : null;
+                            int? exerciseSets = currIndexExercise.containsKey("sets") ? currIndexExercise["sets"] : null;
+                            int? exerciseReps = currIndexExercise.containsKey("reps") ? currIndexExercise["reps"] : null;
+                            String? exerciseDuration = currIndexExercise.containsKey("duration") ? currIndexExercise["duration"] : null;
+
+                            String exerciseDetailsText = exerciseDetails != null
+                                ? exerciseDetails
+                                : (exerciseDuration != null
+                                ? "Duration: $exerciseDuration"
+                                : (exerciseReps == null ? "" : "$exerciseSets sets, $exerciseReps reps each"));
+
+                            var currIsBlacked = doneExercisesOfDay.contains(currIndexExercise["name"]);
+
+                            return GestureDetector(
+                              onTap: () {
+                                if (!currIsBlacked) {
+                                  // Not blacked out
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: Text(currIndexExercise["name"]),
+                                        content: Column(
+                                          mainAxisSize: MainAxisSize.min,
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Text(exerciseDetailsText),
+                                            SizedBox(height: 10),
+                                            Text("Equipment: None"),
+                                            SizedBox(height: 10),
+                                            Text("Description: "),
+                                          ],
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () async {
+                                              await workoutPlanService.updateUserProgressByDay(currUid, listOfDays.indexWhere((dow) => dow == selectedDay), currIndexExercise["name"]);
+                                              await userService.addUserPoints(currUid ?? "", 50);
+                                              // Blackout current card
+                                              Navigator.pop(context); // Close the dialog
+                                              setState(() {});
+                                            },
+                                            child: Text("Finish Workout"),
+                                          ),
+                                          TextButton(
+                                            onPressed: () {
+                                              Navigator.pop(context); // Close the dialog
+                                            },
+                                            child: Text("Close"),
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                }
+                              },
+                              child: Card(
+                                elevation: 3,
+                                margin: EdgeInsets.symmetric(vertical: 8),
+                                color: currIsBlacked ? Colors.green.withOpacity(0.5) : null, // Blackout effect for individual card
+                                child: ListTile(
+                                  leading: Icon(Icons.fitness_center, color: Colors.deepPurple),
+                                  title: Text(
+                                    currIndexExercise["name"],
+                                    style: TextStyle(fontWeight: FontWeight.bold),
+                                  ),
+                                  subtitle: Text(exerciseDetailsText),
+                                  trailing: Icon(Icons.info, color: Colors.deepPurple),
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      }
+                    },
+                  );
+                },
+              ),
+
+
+
               const SizedBox(height: 30),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -444,6 +622,8 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
+
+
 }
 
 // Streak Chart Widget (UI Only)
