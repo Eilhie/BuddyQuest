@@ -1,24 +1,34 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:software_engineering_project/services/user_sevice.dart';
 import 'calibration_flow.dart';
 import 'login_page.dart';
 
-class RegisterPage extends StatelessWidget {
+class RegisterPage extends StatefulWidget {
+  const RegisterPage({Key? key}) : super(key: key);
+
+  @override
+  State<RegisterPage> createState() => _RegisterPageState();
+}
+
+class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
 
-  final FirebaseAuth _auth = FirebaseAuth.instance; // FirebaseAuth instance
+  final FirebaseAuth _auth = FirebaseAuth.instance;
 
-  RegisterPage({super.key});
+  bool _isPasswordVisible = false; // State for password visibility
+  bool _isConfirmPasswordVisible = false; // State for confirm password visibility
 
   Future<void> _registerUser(BuildContext context) async {
     final String fullName = _fullNameController.text.trim();
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
     final String confirmPassword = _confirmPasswordController.text.trim();
+    final userService = UserService();
 
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -31,24 +41,20 @@ class RegisterPage extends StatelessWidget {
     }
 
     try {
-      // Check if email is already registered
       final userQuery = await FirebaseFirestore.instance
           .collection('users')
           .where('email', isEqualTo: email)
           .get();
-
       if (userQuery.docs.isNotEmpty) {
-        // Email already exists in Firestore
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text("This email is already registered. Please log in. "),
+            content: Text("This email is already registered. Please log in."),
             backgroundColor: Colors.red,
           ),
         );
         return;
       }
 
-      // Create user with Firebase Authentication
       UserCredential userCredential = await _auth.createUserWithEmailAndPassword(
         email: email,
         password: password,
@@ -56,34 +62,43 @@ class RegisterPage extends StatelessWidget {
       User? user = userCredential.user;
 
       if (user != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => CalibrationPage()),
+        );
+        var workout_type = await userService.getUserWorkoutCategory(user.uid);
+
         // Store user data in Firestore
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'fullname': fullName,
           'email': email,
           'points': 0, // Default value
-          'workout_type': '', // Default value
+          'workout_type': workout_type,
           'avatar': 'boy-default.png',
+          'follow_master': {
+            'following': <String>[],
+            'follower': <String>[]
+          }
         });
 
         var currDate = DateTime.now();
-        print(currDate.add(Duration(days:(7 - currDate.weekday + 1))).subtract(Duration(hours:currDate.hour, minutes:currDate.minute)));
-        await FirebaseFirestore.instance.collection('user_weekly_workout_progress').doc(user.uid).set({
-          'uid':user.uid,
-          'last_update': currDate.add(Duration(days:(7 - currDate.weekday + 1))).subtract(Duration(hours:currDate.hour, minutes:currDate.minute)), //set last updated to beginning to next week (Monday 00:00)
-          'day0':<String>[],
-          'day1':<String>[],
-          'day2':<String>[],
-          'day3':<String>[],
-          'day4':<String>[],
-          'day5':<String>[],
-          'day6':<String>[]
+        await FirebaseFirestore.instance
+            .collection('user_weekly_workout_progress')
+            .doc(user.uid)
+            .set({
+          'uid': user.uid,
+          'last_update': currDate
+              .add(Duration(days: (7 - currDate.weekday + 1)))
+              .subtract(Duration(hours: currDate.hour, minutes: currDate.minute)),
+          'day0': <String>[],
+          'day1': <String>[],
+          'day2': <String>[],
+          'day3': <String>[],
+          'day4': <String>[],
+          'day5': <String>[],
+          'day6': <String>[]
         });
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => CalibrationPage()),
-        );
 
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("Account created successfully!"),
@@ -92,7 +107,6 @@ class RegisterPage extends StatelessWidget {
       }
     } on FirebaseAuthException catch (e) {
       if (e.code == 'email-already-in-use') {
-        // FirebaseAuth email already exists
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text("This email is already in use. Please try logging in."),
@@ -100,14 +114,12 @@ class RegisterPage extends StatelessWidget {
           ),
         );
       } else {
-        // Handle other FirebaseAuth exceptions
         ScaffoldMessenger.of(context).showSnackBar(SnackBar(
           content: Text("Failed to create account: ${e.message}"),
           backgroundColor: Colors.red,
         ));
       }
     } catch (e) {
-      // Catch any other errors
       ScaffoldMessenger.of(context).showSnackBar(SnackBar(
         content: Text("An unexpected error occurred: ${e.toString()}"),
         backgroundColor: Colors.red,
@@ -179,13 +191,23 @@ class RegisterPage extends StatelessWidget {
             ),
             TextField(
               controller: _passwordController,
-              obscureText: true,
-              decoration: const InputDecoration(
+              obscureText: !_isPasswordVisible,
+              decoration: InputDecoration(
                 hintText: 'Enter your password',
-                hintStyle: TextStyle(
+                hintStyle: const TextStyle(
                   color: Colors.grey,
                   fontSize: 16.0,
                   fontStyle: FontStyle.italic,
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
                 ),
               ),
             ),
@@ -199,19 +221,29 @@ class RegisterPage extends StatelessWidget {
             ),
             TextField(
               controller: _confirmPasswordController,
-              obscureText: true,
-              decoration: const InputDecoration(
-                hintText: 'Confirm your Password',
-                hintStyle: TextStyle(
+              obscureText: !_isConfirmPasswordVisible,
+              decoration: InputDecoration(
+                hintText: 'Confirm your password',
+                hintStyle: const TextStyle(
                   color: Colors.grey,
                   fontSize: 16.0,
                   fontStyle: FontStyle.italic,
+                ),
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isConfirmPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isConfirmPasswordVisible = !_isConfirmPasswordVisible;
+                    });
+                  },
                 ),
               ),
             ),
             const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () => _registerUser(context), // Call the Firebase registration logic
+              onPressed: () => _registerUser(context),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0x9954473F),
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
@@ -226,7 +258,6 @@ class RegisterPage extends StatelessWidget {
             const SizedBox(height: 20),
             TextButton(
               onPressed: () {
-                // Navigate to the Login page
                 Navigator.pushReplacement(
                   context,
                   MaterialPageRoute(builder: (context) => LoginPage()),

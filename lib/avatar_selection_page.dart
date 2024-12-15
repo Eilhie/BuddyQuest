@@ -35,7 +35,7 @@ class AvatarSelectionPage extends StatelessWidget {
       body: Column(
         children: [
           // Custom header
-          SizedBox(height: 40),
+          const SizedBox(height: 40),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -45,7 +45,7 @@ class AvatarSelectionPage extends StatelessWidget {
                   Navigator.pop(context); // Navigate back when pressing the back arrow
                 },
               ),
-              Text(
+              const Text(
                 'Select Avatar',
                 style: TextStyle(
                   fontSize: 24,
@@ -66,14 +66,14 @@ class AvatarSelectionPage extends StatelessWidget {
               ),
             ],
           ),
-          SizedBox(height: 16), // Add some space after the row
+          const SizedBox(height: 16), // Add some space after the row
 
           // Avatar Grid
           Expanded(
             child: Padding(
               padding: const EdgeInsets.all(16.0),
               child: GridView.builder(
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2, // 2 avatars per row
                   crossAxisSpacing: 16.0, // Spacing between avatars
                   mainAxisSpacing: 16.0, // Vertical spacing between avatars
@@ -111,7 +111,7 @@ class AvatarSelectionPage extends StatelessWidget {
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
-          title: Text('Confirm Avatar'),
+          title: const Text('Confirm Avatar'),
           content: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
@@ -119,8 +119,8 @@ class AvatarSelectionPage extends StatelessWidget {
                 radius: 50,
                 backgroundImage: AssetImage(selectedAvatar),
               ),
-              SizedBox(height: 16),
-              Text('Do you want to set this as your profile picture?'),
+              const SizedBox(height: 16),
+              const Text('Do you want to set this as your profile picture?'),
             ],
           ),
           actions: [
@@ -145,7 +145,7 @@ class AvatarSelectionPage extends StatelessWidget {
 
                     // Show a success message
                     ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
+                      const SnackBar(
                         content: Text('Avatar updated successfully!'),
                       ),
                     );
@@ -159,13 +159,13 @@ class AvatarSelectionPage extends StatelessWidget {
                   );
                 }
               },
-              child: Text('Confirm'),
+              child: const Text('Confirm'),
             ),
             TextButton(
               onPressed: () {
                 Navigator.pop(context); // Close the dialog without selecting
               },
-              child: Text('Cancel'),
+              child: const Text('Cancel'),
             ),
           ],
         );

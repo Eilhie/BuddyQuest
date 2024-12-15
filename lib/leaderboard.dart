@@ -1,3 +1,4 @@
+
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -65,9 +66,9 @@ class LeaderboardPage extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          if (leaderboard.length > 1) _buildTopUserCard(leaderboard[1], size: 80),
-                          if (leaderboard.isNotEmpty) _buildTopUserCard(leaderboard[0], size: 100, isHighlighted: true),
-                          if (leaderboard.length > 2) _buildTopUserCard(leaderboard[2], size: 80),
+                          if (leaderboard.length > 1) _buildTopUserCard(leaderboard[1], size: 80, rank: 2),
+                          if (leaderboard.isNotEmpty) _buildTopUserCard(leaderboard[0], size: 100, isHighlighted: true, rank: 1),
+                          if (leaderboard.length > 2) _buildTopUserCard(leaderboard[2], size: 80, rank: 3),
                         ],
                       ),
                       SizedBox(height: 30),
@@ -130,6 +131,43 @@ class LeaderboardPage extends StatelessWidget {
           ],
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
+        currentIndex: 0,
+        onTap: (index) {
+          if (index == 0) {
+            // Home
+          } else if (index == 1) {
+            Navigator.pushNamed(context, '/workout');
+          } else if (index == 2) {
+            Navigator.pushNamed(context, '/leaderboard');
+          } else if (index == 3) {
+            Navigator.pushNamed(context, '/profile');
+          }
+        },
+        selectedItemColor: Colors.deepPurple,
+        unselectedItemColor: Colors.black,
+        showSelectedLabels: true,
+        showUnselectedLabels: false,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.pie_chart),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.fitness_center),
+            label: 'Workout',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.leaderboard),
+            label: 'Leaderboard',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
     );
   }
 
@@ -177,11 +215,20 @@ class LeaderboardPage extends StatelessWidget {
   Widget _buildTopUserCard(
       Map<String, dynamic> player, {
         required double size,
-        bool isHighlighted = false,
+        bool isHighlighted = false, required int rank,
       }) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
+        Image.asset(
+          'assets/additional/crown.png',
+          height: 24, // Adjust size of crown
+          color: rank == 1
+              ? Colors.amber // Gold tint for 1st place
+              : rank == 2
+              ? Colors.grey // Silver tint for 2nd place
+              : Colors.brown, // Bronze tint for 3rd place
+        ),
         CircleAvatar(
           radius: size / 2,
           backgroundImage: AssetImage('assets/profiles/${player['avatar']}'),

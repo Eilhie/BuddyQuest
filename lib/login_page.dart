@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'calibration_flow.dart';
 import 'home_page.dart';
 import 'register_page.dart';
 import 'google_signin_config.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'services/user_sevice.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -19,9 +21,13 @@ class _LoginPageState extends State<LoginPage> {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: GoogleSignInConfig.clientId, // Add your client ID here
   );
+  final userService = UserService();
 
   // Initialize FirebaseFirestore
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  // Variable to toggle password visibility
+  bool _isPasswordVisible = false;
 
   // Login with Email & Password
   Future<void> _signInWithEmailPassword() async {
@@ -64,14 +70,23 @@ class _LoginPageState extends State<LoginPage> {
         // Check if user data already exists
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
         if (!userDoc.exists) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => CalibrationPage()),
+          );
+          var workout_type = await userService.getUserWorkoutCategory(user.uid);
           // Store user data only if it's a new user
           await _firestore.collection('users').doc(user.uid).set({
             'uid': user.uid,
             'fullname': user.displayName ?? '',
             'email': user.email,
             'points': 0, // Default value
-            'workout_type': '', // Default value
+            'workout_type': workout_type, // Default value
             'avatar': 'boy-default',
+            'follow_master': {
+              'following': <String>[],
+              'follower': <String>[]
+            }
           }).catchError((error) {
             print('Error storing user data: $error');
             ScaffoldMessenger.of(context).showSnackBar(
@@ -79,18 +94,19 @@ class _LoginPageState extends State<LoginPage> {
             );
           });
 
-          //create entry in weekly workout status if it's a new user
+          // Create entry in weekly workout status if it's a new user
           var currDate = DateTime.now();
           await _firestore.collection('user_weekly_workout_progress').doc(user.uid).set({
-            'uid':user.uid,
-            'last_update': currDate.add(Duration(days:(7 - currDate.weekday + 1))).subtract(Duration(hours:currDate.hour, minutes:currDate.minute)), //set last updated to beginning to next week (Monday 00:00)
-            'day0':<String>[],
-            'day1':<String>[],
-            'day2':<String>[],
-            'day3':<String>[],
-            'day4':<String>[],
-            'day5':<String>[],
-            'day6':<String>[]
+            'uid': user.uid,
+            'last_update': currDate.add(Duration(days: (7 - currDate.weekday + 1)))
+                .subtract(Duration(hours: currDate.hour, minutes: currDate.minute)), // Set last updated to the start of next week
+            'day0': <String>[],
+            'day1': <String>[],
+            'day2': <String>[],
+            'day3': <String>[],
+            'day4': <String>[],
+            'day5': <String>[],
+            'day6': <String>[]
           });
         }
       }
@@ -111,7 +127,6 @@ class _LoginPageState extends State<LoginPage> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -120,7 +135,7 @@ class _LoginPageState extends State<LoginPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(padding: EdgeInsets.all(30.0)),
+            const SizedBox(height: 30),
             const Text(
               'Sign In',
               style: TextStyle(
@@ -130,7 +145,6 @@ class _LoginPageState extends State<LoginPage> {
             ),
             const SizedBox(height: 30),
             const Text(
-
               "Email",
               style: TextStyle(
                 fontSize: 18,
@@ -143,7 +157,7 @@ class _LoginPageState extends State<LoginPage> {
                 hintText: 'Enter your email',
               ),
             ),
-            const Padding(padding: EdgeInsets.all(10.0)),
+            const SizedBox(height: 20),
             const Text(
               "Password",
               style: TextStyle(
@@ -153,38 +167,54 @@ class _LoginPageState extends State<LoginPage> {
             ),
             TextField(
               controller: _passwordController,
-              decoration: const InputDecoration(
+              obscureText: !_isPasswordVisible, // Toggle password visibility
+              decoration: InputDecoration(
                 hintText: 'Enter your password',
-
+                suffixIcon: IconButton(
+                  icon: Icon(
+                    _isPasswordVisible ? Icons.visibility : Icons.visibility_off,
+                  ),
+                  onPressed: () {
+                    setState(() {
+                      _isPasswordVisible = !_isPasswordVisible;
+                    });
+                  },
+                ),
               ),
             ),
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: _signInWithEmailPassword,
               style: ElevatedButton.styleFrom(
-                backgroundColor: Color(0x9954473F),
-                padding: EdgeInsets.symmetric(vertical: 12, horizontal: 32),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                minimumSize: Size(double.infinity, 60),
-              ),
-              child: const Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-            ),
-            const SizedBox(height: 20),
-            ElevatedButton.icon(
-              onPressed: _signInWithGoogle,
-              icon: const Icon(Icons.login),
-              label: const Text('Sign In with Google'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.red,
+                backgroundColor: const Color(0x9954473F),
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
                 minimumSize: const Size(double.infinity, 60),
               ),
-
+              child: const Text('SIGN IN', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
+            ),
+            const SizedBox(height: 20),
+            ElevatedButton.icon(
+              onPressed: _signInWithGoogle,
+              icon: Image.asset(
+                'assets/logo/google_logo.png', // Path to your local image
+                height: 24,
+                width: 24,
+              ),
+              label: const Text(
+                'SIGN IN WITH GOOGLE',
+                style: TextStyle(color: Colors.black),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                minimumSize: const Size(double.infinity, 60),
+              ),
             ),
             const SizedBox(height: 20),
             TextButton(
