@@ -89,8 +89,8 @@ class WorkoutPlanService
   Future<void> checkUpdateUserProgress(String? uid) async
   {
     DateTime currDate = DateTime.now();
-    DateTime lastMonday = currDate.subtract(Duration(days:(currDate.weekday - 1), hours:(currDate.hour - 0), minutes:(currDate.minute)));
-    DateTime nextMonday = currDate.add(Duration(days:(7 - currDate.weekday + 1), hours:(currDate.hour - 0), minutes:(currDate.minute)));
+    DateTime lastMonday = currDate.subtract(Duration(days:(currDate.weekday - 1), hours:(currDate.hour), minutes:(currDate.minute)));
+    DateTime nextMonday = currDate.add(Duration(days:(7 - currDate.weekday + 1))).subtract(Duration(hours:(currDate.hour), minutes:(currDate.minute)));
     try
     {
       var collectionReference = user_weekly_workout_progress.doc(uid);

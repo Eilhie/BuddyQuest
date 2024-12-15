@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:software_engineering_project/services/user_sevice.dart';
 import 'calibration_flow.dart';
 import 'login_page.dart';
 
@@ -27,6 +28,7 @@ class _RegisterPageState extends State<RegisterPage> {
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
     final String confirmPassword = _confirmPasswordController.text.trim();
+    final userService = UserService();
 
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -43,7 +45,6 @@ class _RegisterPageState extends State<RegisterPage> {
           .collection('users')
           .where('email', isEqualTo: email)
           .get();
-
       if (userQuery.docs.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -61,12 +62,13 @@ class _RegisterPageState extends State<RegisterPage> {
       User? user = userCredential.user;
 
       if (user != null) {
+        // Store user data in Firestore
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'fullname': fullName,
           'email': email,
-          'points': 0,
-          'workout_type': '',
+          'points': 0, // Default value
+          'workout_type': "",
           'avatar': 'boy-default.png',
           'follow_master': {
             'following': <String>[],
