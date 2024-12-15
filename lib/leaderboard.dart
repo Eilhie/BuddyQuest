@@ -133,14 +133,12 @@ class LeaderboardPage extends StatelessWidget {
       ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
-        currentIndex: 0,
+        currentIndex: 2,
         onTap: (index) {
           if (index == 0) {
-            // Home
+            Navigator.pushNamed(context, '/home');
           } else if (index == 1) {
             Navigator.pushNamed(context, '/workout');
-          } else if (index == 2) {
-            Navigator.pushNamed(context, '/leaderboard');
           } else if (index == 3) {
             Navigator.pushNamed(context, '/profile');
           }
