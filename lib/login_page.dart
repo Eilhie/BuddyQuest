@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'calibration_flow.dart';
 import 'home_page.dart';
 import 'register_page.dart';
 import 'google_signin_config.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'services/user_sevice.dart';
 
 class LoginPage extends StatefulWidget {
   @override
@@ -19,6 +21,7 @@ class _LoginPageState extends State<LoginPage> {
   final GoogleSignIn _googleSignIn = GoogleSignIn(
     clientId: GoogleSignInConfig.clientId, // Add your client ID here
   );
+  final userService = UserService();
 
   // Initialize FirebaseFirestore
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -63,18 +66,19 @@ class _LoginPageState extends State<LoginPage> {
       if (user != null) {
         // Check if user data already exists
         DocumentSnapshot userDoc = await _firestore.collection('users').doc(user.uid).get();
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => RegisterPage()),
-        );
         if (!userDoc.exists) {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (context) => CalibrationPage()),
+          );
+          var workout_type = await userService.getUserWorkoutCategory(user.uid);
           // Store user data only if it's a new user
           await _firestore.collection('users').doc(user.uid).set({
             'uid': user.uid,
             'fullname': user.displayName ?? '',
             'email': user.email,
             'points': 0, // Default value
-            'workout_type': '', // Default value
+            'workout_type': workout_type, // Default value
             'avatar': 'boy-default',
             'follow_master': {
               'following': <String>[],

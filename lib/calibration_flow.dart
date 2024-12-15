@@ -1,4 +1,6 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'services/user_sevice.dart';
 
 class CalibrationPage extends StatefulWidget {
   @override
@@ -7,6 +9,8 @@ class CalibrationPage extends StatefulWidget {
 
 class _CalibrationPageState extends State<CalibrationPage> {
   int _currentStep = 0;
+  List<int> selectedOptions = [0,0,0];
+  final userService = UserService();
 
   final List<Map<String, dynamic>> _calibrationSteps = [
     {
@@ -27,12 +31,50 @@ class _CalibrationPageState extends State<CalibrationPage> {
     },
   ];
 
-  void _nextStep() {
+  Future<void> _nextStep() async {
     if (_currentStep < _calibrationSteps.length - 1) {
       setState(() {
         _currentStep++;
       });
     } else {
+      // check workout types
+      String workout_type = "";
+      if((selectedOptions[0] <= 1) & (selectedOptions[1] <= 1))
+      {
+        workout_type = "1.1";
+      }
+      else if ((selectedOptions[0]==0) & (selectedOptions[1]>=2))
+      {
+        workout_type = "1.2";
+      }
+      else if ((selectedOptions[0]==2) & (selectedOptions[2]==0))
+      {
+        workout_type = "2.1";
+      }
+      else if ((selectedOptions[0]==2) & (selectedOptions[2]==1))
+      {
+        workout_type = "2.2";
+      }
+      else if ((selectedOptions[0]==2) & (selectedOptions[2]==2))
+      {
+        workout_type = "2.3";
+      }
+      else if ((selectedOptions[0]==3) & (selectedOptions[2]==0))
+      {
+        workout_type = "3.1";
+      }
+      else if ((selectedOptions[0]==3) & (selectedOptions[2]==1))
+      {
+        workout_type = "3.2";
+      }
+      else
+      {
+        workout_type = "3.3";
+      }
+
+      var currentUser = FirebaseAuth.instance.currentUser;
+      var currUid = currentUser?.uid??"";
+      await userService.updateUserWorkoutCategory(currUid, workout_type);
       Navigator.pushReplacementNamed(context, '/home');
     }
   }
@@ -63,7 +105,11 @@ class _CalibrationPageState extends State<CalibrationPage> {
                 child: SizedBox(
                   width: double.infinity, // Ensures button width fills the available space
                   child: ElevatedButton(
-                    onPressed: _nextStep,
+                    onPressed: () async
+                    {
+                      selectedOptions[_currentStep] = (currentStep["options"] as List<String>).indexOf(option);
+                      await _nextStep();
+                    },
                     child: Text(option),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size(double.infinity, 50), // Fixed height and full width

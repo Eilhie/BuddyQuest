@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:software_engineering_project/services/user_sevice.dart';
 import 'calibration_flow.dart';
 import 'login_page.dart';
 
@@ -19,6 +20,7 @@ class RegisterPage extends StatelessWidget {
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
     final String confirmPassword = _confirmPasswordController.text.trim();
+    final userService = UserService();
 
     if (password != confirmPassword) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -36,7 +38,6 @@ class RegisterPage extends StatelessWidget {
           .collection('users')
           .where('email', isEqualTo: email)
           .get();
-
       if (userQuery.docs.isNotEmpty) {
         // Email already exists in Firestore
         ScaffoldMessenger.of(context).showSnackBar(
@@ -56,13 +57,19 @@ class RegisterPage extends StatelessWidget {
       User? user = userCredential.user;
 
       if (user != null) {
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => CalibrationPage()),
+        );
+        var workout_type = await userService.getUserWorkoutCategory(user.uid);
+
         // Store user data in Firestore
         await FirebaseFirestore.instance.collection('users').doc(user.uid).set({
           'uid': user.uid,
           'fullname': fullName,
           'email': email,
           'points': 0, // Default value
-          'workout_type': '', // Default value
+          'workout_type': workout_type, // Default value
           'avatar': 'boy-default.png',
           'follow_master': {
             'following': <String>[],
@@ -83,11 +90,6 @@ class RegisterPage extends StatelessWidget {
           'day5':<String>[],
           'day6':<String>[]
         });
-
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (context) => CalibrationPage()),
-        );
 
         ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
           content: Text("Account created successfully!"),
