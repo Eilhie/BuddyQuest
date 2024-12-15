@@ -6,6 +6,7 @@ import 'avatar_selection_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'BMI_page.dart';
+import 'calibration_flow.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -124,26 +125,21 @@ class _SettingsPageState extends State<SettingsPage> {
                 title: 'Workout Plan',
                 subtitle: 'Tap to edit workout plan',
                 onTap: () {
-                  // Navigate to Workout Plan
-                },
-              ),
-              _buildProfileOption(
-                context,
-                icon: Icons.female,
-                title: 'BMI',
-                onTap: () {
                   Navigator.pushReplacement(
                     context,
-                    MaterialPageRoute(builder: (context) => BMIPage()),
+                    MaterialPageRoute(builder: (context) => CalibrationPage()),
                   );
                 },
               ),
               _buildProfileOption(
                 context,
-                icon: Icons.home_outlined,
-                title: 'Kemanggisan, Jakarta Barat',
+                icon: Icons.calculate_outlined,
+                title: 'BMI Calculator',
                 onTap: () {
-                  // Handle Address Edit
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => BMIPage()),
+                  );
                 },
               ),
               _buildProfileOption(

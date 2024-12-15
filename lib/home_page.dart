@@ -240,31 +240,39 @@ class _HomePageState extends State<HomePage> {
                   : Column(
                 children: _latestPosts.map((postDoc) {
                   final post = postDoc.data() as Map<String, dynamic>;
-                  return _buildForumCard(
-                    postDoc.id,
-                    post['fullname'] ?? 'Unknown',
-                    post['content'] ?? '',
-                    post['likes'] ?? 0,
-                    post['timestamp'] as Timestamp?,
+                  return Column(
+                    children: [
+                      _buildForumCard(
+                        postDoc.id,
+                        post['fullname'] ?? 'Unknown',
+                        post['content'] ?? '',
+                        post['likes'] ?? 0,
+                        post['timestamp'] as Timestamp?,
+                      ),
+                      const SizedBox(height: 20), // Add space after each forum card
+                    ],
                   );
                 }).toList(),
               ),
-              const SizedBox(height: 8),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => ForumPage()),
-                  );
-                },
-                child: const Text(
-                  "See More",
-                  style: TextStyle(
-                    color: Colors.blue,
-                    fontWeight: FontWeight.bold,
+
+              Center(
+                child: TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => ForumPage()),
+                    );
+                  },
+                  child: const Text(
+                    "See More",
+                    style: TextStyle(
+                      color: Colors.blue,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ),
+
             ],
           ),
         ),
@@ -389,6 +397,46 @@ class _HomePageState extends State<HomePage> {
                 },
                 icon: const Icon(Icons.reply, color: Colors.grey),
                 label: const Text('Reply', style: TextStyle(color: Colors.grey)),
+              ),
+              TextButton.icon(
+                onPressed: () {
+                  // Show confirmation dialog
+                  showDialog(
+                    context: context,
+                    builder: (BuildContext context) {
+                      return AlertDialog(
+                        title: const Text('Report Post'),
+                        content: const Text('Are you sure you want to report this post?'),
+                        actions: [
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the dialog
+                            },
+                            child: const Text('Cancel'),
+                          ),
+                          TextButton(
+                            onPressed: () {
+                              Navigator.of(context).pop(); // Close the dialog
+
+                              // Show "Report Submitted" snackbar
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Report Submitted'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+
+                              // Add additional logic for reporting the post here (e.g., API call)
+                            },
+                            child: const Text('Report'),
+                          ),
+                        ],
+                      );
+                    },
+                  );
+                },
+                icon: const Icon(Icons.reply, color: Colors.red),
+                label: const Text('Report', style: TextStyle(color: Colors.red)),
               ),
             ],
           ),

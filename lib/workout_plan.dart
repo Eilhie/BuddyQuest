@@ -138,106 +138,125 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                   SizedBox(height: 10),
                   Expanded(
                       child:FutureBuilder(
-                          future: userService.getUserWorkoutCategory(currUid??""),
+                          future: Future.wait([workoutPlanService.getExcerciseByCategoryDay("1.1", listOfDays.indexWhere((dow)=>dow==selectedDay)), workoutPlanService.getUserProgressByDay(currUid, listOfDays.indexWhere((dow)=>dow==selectedDay))]),
                           builder: (context, snapshot)
                           {
                             if(snapshot.connectionState == ConnectionState.waiting)
                             {
                               return Center(child:CircularProgressIndicator());
                             }
-                            return FutureBuilder(
-                                future: Future.wait([workoutPlanService.getExcerciseByCategoryDay(snapshot.data??"", listOfDays.indexWhere((dow)=>dow==selectedDay)), workoutPlanService.getUserProgressByDay(currUid, listOfDays.indexWhere((dow)=>dow==selectedDay))]),
-                                builder: (context, snapshot)
-                                {
-                                  if(snapshot.connectionState == ConnectionState.waiting)
+                            else
+                            {
+                              if(snapshot.data?[0] == null) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    crossAxisAlignment: CrossAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.beach_access, // Icon representing rest, like a beach or vacation icon
+                                        size: 100,
+                                        color: Colors.deepPurple,
+                                      ),
+                                      SizedBox(height: 20),
+                                      Text(
+                                        "Rest Day",
+                                        style: TextStyle(
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.deepPurple,
+                                        ),
+                                      ),
+                                      SizedBox(height: 10),
+                                      Text(
+                                        "\"Take time to relax. Recovery is just as important as the workout itself.\"",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontStyle: FontStyle.italic,
+                                          color: Colors.grey[700],
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              Map<String, dynamic>? exercisesOfDay = snapshot.data?[0] as Map<String, dynamic>;
+                              List<String> doneExercisesOfDay = snapshot.data?[1] as List<String>;
+                              print(doneExercisesOfDay);
+                              return ListView.builder(
+                                  itemCount: exercisesOfDay["exercises"].length ?? 0,
+                                  itemBuilder: (context, index)
                                   {
-                                    return Center(child:CircularProgressIndicator());
-                                  }
-                                  else
-                                  {
-                                    if(snapshot.data?[0] == null)
-                                    {
-                                      return Text("Rest Bro");
-                                    }
-                                    Map<String, dynamic>? exercisesOfDay = snapshot.data?[0] as Map<String, dynamic>;
-                                    List<String> doneExercisesOfDay = snapshot.data?[1] as List<String>;
-                                    print(doneExercisesOfDay);
-                                    return ListView.builder(
-                                        itemCount: exercisesOfDay["exercises"].length ?? 0,
-                                        itemBuilder: (context, index)
-                                        {
-                                          Map<String, dynamic> currIndexExercise = exercisesOfDay["exercises"][index];
-                                          String? exerciseDetails = currIndexExercise.containsKey("details")?currIndexExercise["details"]:null;
-                                          int? exerciseSets = currIndexExercise.containsKey("sets")?currIndexExercise["sets"]:null;
-                                          int? exerciseReps = currIndexExercise.containsKey("reps")?currIndexExercise["reps"]:null;
-                                          String? exerciseDuration = currIndexExercise.containsKey("duration")?currIndexExercise["duration"]:null;
-                                          String exerciseDetailsText = exerciseDetails!=null?exerciseDetails:(exerciseDuration!=null?"Duration : $exerciseDuration":(exerciseReps==null?"":"$exerciseSets sets, $exerciseReps reps each"));
-                                          var currIsBlacked = doneExercisesOfDay.contains(currIndexExercise["name"]);
-                                          return GestureDetector(
-                                              onTap:(){
-                                                if(!currIsBlacked) //not blacked out
-                                                    {
-                                                  showDialog(
-                                                    context: context,
-                                                    builder: (BuildContext context) {
-                                                      return AlertDialog(
-                                                        title: Text(currIndexExercise["name"]),
-                                                        content: Column(
-                                                          mainAxisSize: MainAxisSize.min,
-                                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                                          children: [
-                                                            Text(exerciseDetailsText),
-                                                            SizedBox(height: 10),
-                                                            Text("Equipment: None"),
-                                                            SizedBox(height: 10),
-                                                            Text("Description: "),
-                                                          ],
-                                                        ),
-                                                        actions: [
-                                                          TextButton(
-                                                            onPressed: () async {
-                                                              await workoutPlanService.updateUserProgressByDay(currUid, listOfDays.indexWhere((dow)=>dow==selectedDay), currIndexExercise["name"]);
-                                                              //blackout current card
-                                                              Navigator.pop(context); // Close the dialog
-                                                              setState(() {});
-                                                            },
-                                                            child: Text("Finish Workout"),
-                                                          ),
-                                                          TextButton(
-                                                            onPressed: () {
-                                                              Navigator.pop(context); // Close the dialog
-                                                            },
-                                                            child: Text("Close"),
-                                                          ),
-                                                        ],
-                                                      );
-                                                    },
-                                                  );
-                                                }
+                                    Map<String, dynamic> currIndexExercise = exercisesOfDay["exercises"][index];
+                                    String? exerciseDetails = currIndexExercise.containsKey("details")?currIndexExercise["details"]:null;
+                                    int? exerciseSets = currIndexExercise.containsKey("sets")?currIndexExercise["sets"]:null;
+                                    int? exerciseReps = currIndexExercise.containsKey("reps")?currIndexExercise["reps"]:null;
+                                    String? exerciseDuration = currIndexExercise.containsKey("duration")?currIndexExercise["duration"]:null;
+                                    String exerciseDetailsText = exerciseDetails!=null?exerciseDetails:(exerciseDuration!=null?"Duration : $exerciseDuration":(exerciseReps==null?"":"$exerciseSets sets, $exerciseReps reps each"));
+                                    var currIsBlacked = doneExercisesOfDay.contains(currIndexExercise["name"]);
+                                    return GestureDetector(
+                                        onTap:(){
+                                          if(!currIsBlacked) //not blacked out
+                                            {
+                                            showDialog(
+                                              context: context,
+                                              builder: (BuildContext context) {
+                                                return AlertDialog(
+                                                  title: Text(currIndexExercise["name"]),
+                                                  content: Column(
+                                                    mainAxisSize: MainAxisSize.min,
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(exerciseDetailsText),
+                                                      SizedBox(height: 10),
+                                                      Text("Equipment: None"),
+                                                      SizedBox(height: 10),
+                                                      Text("Description: "),
+                                                    ],
+                                                  ),
+                                                  actions: [
+                                                    TextButton(
+                                                      onPressed: () async {
+                                                        await workoutPlanService.updateUserProgressByDay(currUid, listOfDays.indexWhere((dow)=>dow==selectedDay), currIndexExercise["name"]);
+                                                        //blackout current card
+                                                        Navigator.pop(context); // Close the dialog
+                                                        setState(() {});
+                                                      },
+                                                      child: Text("Finish Workout"),
+                                                    ),
+                                                    TextButton(
+                                                      onPressed: () {
+                                                        Navigator.pop(context); // Close the dialog
+                                                      },
+                                                      child: Text("Close"),
+                                                    ),
+                                                  ],
+                                                );
                                               },
-                                              child:Card(
-                                                  elevation: 3,
-                                                  margin: EdgeInsets.symmetric(vertical: 8),
-                                                  color: currIsBlacked ? Colors.black.withOpacity(0.5) : null, // Blackout effect for individual card
-                                                  child: ListTile(
-                                                      leading: Icon(Icons.fitness_center, color: Colors.deepPurple),
-                                                      title:
-                                                      Text(currIndexExercise["name"],
-                                                        style: TextStyle(fontWeight: FontWeight.bold),
-                                                      ),
-                                                      subtitle: Text(exerciseDetailsText
-                                                      ),
-                                                      trailing: Icon(Icons.info, color: Colors.deepPurple)
-                                                  )
-                                              )
-                                          );
-                                        }
+                                            );
+                                          }
+                                        },
+                                        child:Card(
+                                            elevation: 3,
+                                            margin: EdgeInsets.symmetric(vertical: 8),
+                                            color: currIsBlacked ? Colors.green.withOpacity(0.5) : null, // Blackout effect for individual card
+                                            child: ListTile(
+                                                leading: Icon(Icons.fitness_center, color: Colors.deepPurple),
+                                                title:
+                                                Text(currIndexExercise["name"],
+                                                  style: TextStyle(fontWeight: FontWeight.bold),
+                                                ),
+                                                subtitle: Text(exerciseDetailsText
+                                                ),
+                                                trailing: Icon(Icons.info, color: Colors.deepPurple)
+                                            )
+                                        )
                                     );
                                   }
-                                }
-                            );
-                          }
-                      )
+                              );
+                            }
 
                     /*child: ListView.builder(
                 itemCount: dailyExercises[selectedDay]?.length ?? 0,
