@@ -78,6 +78,9 @@ class _LoginPageState extends State<LoginPage> {
             'points': 0, // Default value
             'workout_type': "", // Default value
             'avatar': 'boy-default',
+            "currentStreak" : 0,
+            "highestStreak" : 0,
+            "lastStreakUpdate":DateTime.now().subtract(Duration(days:1)),
             'follow_master': {
               'following': <String>[],
               'follower': <String>[]

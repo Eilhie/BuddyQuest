@@ -22,8 +22,10 @@ class _RegisterPageState extends State<RegisterPage> {
 
   bool _isPasswordVisible = false; // State for password visibility
   bool _isConfirmPasswordVisible = false; // State for confirm password visibility
+  bool _isLoadingRegister = false;
 
   Future<void> _registerUser(BuildContext context) async {
+    _isLoadingRegister = true;
     final String fullName = _fullNameController.text.trim();
     final String email = _emailController.text.trim();
     final String password = _passwordController.text.trim();
@@ -69,6 +71,9 @@ class _RegisterPageState extends State<RegisterPage> {
           'email': email,
           'points': 0, // Default value
           'workout_type': "",
+          "currentStreak" : 0,
+          "highestStreak" : 0,
+          "lastStreakUpdate":DateTime.now().subtract(Duration(days:1)),
           'avatar': 'boy-default.png',
           'follow_master': {
             'following': <String>[],
@@ -124,6 +129,7 @@ class _RegisterPageState extends State<RegisterPage> {
         backgroundColor: Colors.red,
       ));
     }
+    _isLoadingRegister = false;
   }
 
   @override
@@ -242,7 +248,10 @@ class _RegisterPageState extends State<RegisterPage> {
             ),
             const SizedBox(height: 30),
             ElevatedButton(
-              onPressed: () => _registerUser(context),
+              onPressed: () async
+              {
+                _isLoadingRegister ? null : await _registerUser(context);
+              },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0x9954473F),
                 padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 32),

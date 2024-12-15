@@ -103,7 +103,7 @@ class WorkoutPlanService
       {
         Map<String, dynamic> objMap = querySnapshot.data() as Map<String, dynamic>;
         var lastUpdate = DateTime.fromMillisecondsSinceEpoch((objMap["last_update"] as Timestamp).seconds * 1000);
-        if((lastUpdate.weekday == lastMonday.weekday) & (lastUpdate.month == lastMonday.month) & (lastUpdate.year == lastMonday.year))
+        if((lastUpdate.day == lastMonday.day) & (lastUpdate.month == lastMonday.month) & (lastUpdate.year == lastMonday.year))
         {//reset workout progress and set last update to next monday
           for(int i=0;i<7;i++)
           {
@@ -116,8 +116,41 @@ class WorkoutPlanService
     }
     catch(e)
     {
+      print("Something went wrong in checkUpdateUserProgress");
       print(e);
     }
 
+  }
+
+  Future<DateTime?> getNextWorkoutDay(String category, DateTime date) async
+  {
+    try
+    {
+      var querySnapshot = await workout_plans.where("category", isEqualTo: category).get();
+      var queryDocumentSnapshot = querySnapshot.docs;
+      if(queryDocumentSnapshot.isEmpty)
+      {
+        return null;
+      }
+      else {
+        Map<String, dynamic> objMap = queryDocumentSnapshot[0].data() as Map<String, dynamic>;
+        List<dynamic> workout_days = objMap["days"];
+        // next workout day is next monday
+        if((date.weekday) >= workout_days.length)
+        {
+          return date.add(Duration(days:(7 - date.weekday + 1))).subtract(Duration(hours:(date.hour), minutes:(date.minute)));
+        }
+        else//next workout day is tomorrow
+        {
+          return date.add(Duration(days:1));
+        }
+
+      }
+    }
+    catch(e)
+    {
+      print(e);
+    }
+    return null;
   }
 }
