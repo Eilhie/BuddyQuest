@@ -6,6 +6,7 @@ class WorkoutPlanService
 {
   final CollectionReference workout_plans = FirebaseFirestore.instance.collection('workout_plan_v2');
   final CollectionReference user_weekly_workout_progress = FirebaseFirestore.instance.collection("user_weekly_workout_progress");
+  final CollectionReference workout_assets = FirebaseFirestore.instance.collection('workout_video');
 
 
   // return map <string, dynamic>
@@ -145,6 +146,26 @@ class WorkoutPlanService
           return date.add(Duration(days:1));
         }
 
+      }
+    }
+    catch(e)
+    {
+      print(e);
+    }
+    return null;
+  }
+
+  Future<String?> getVideoByName(String exerciseName) async
+  {
+    try
+    {
+      var collectionReference = workout_assets.doc(exerciseName);
+      var querySnapshot = await collectionReference.get();
+      if(querySnapshot.exists)
+      {
+        Map<String, dynamic> objMap = querySnapshot.data() as Map<String, dynamic>;
+        String assetString = objMap["asset_path"];
+        return assetString;
       }
     }
     catch(e)
