@@ -222,7 +222,6 @@ class _HomePageState extends State<HomePage> {
                 ),
               ),
 
-              const SizedBox(height: 16),
               // Today's plan from rici api
               Container(child:FutureBuilder(
                 future: userService.getUserWorkoutCategory(currUid ?? ""),
@@ -368,7 +367,10 @@ class _HomePageState extends State<HomePage> {
                     },
                   );
                 },
-              ),width:200, height:100),
+              ),
+                width: MediaQuery.of(context).size.width, // 80% of screen width
+                height: MediaQuery.of(context).size.height * 0.35, // 20% of screen height
+              ),
 
 
 
