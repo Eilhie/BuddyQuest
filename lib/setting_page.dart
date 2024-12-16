@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:software_engineering_project/services/workout_plan_service.dart';
 import 'login_page.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -17,6 +18,7 @@ class SettingsPage extends StatefulWidget {
 
 class _SettingsPageState extends State<SettingsPage> {
   String _profileImage = 'assets/profiles/boy-default.png'; // Default profile image
+  final workoutService = WorkoutPlanService();
 
   @override
   void initState() {
@@ -124,7 +126,39 @@ class _SettingsPageState extends State<SettingsPage> {
                 icon: Icons.fitness_center,
                 title: 'Workout Plan',
                 subtitle: 'Tap to edit workout plan',
-                onTap: () {
+                onTap: () async {
+                  final currentUser = FirebaseAuth.instance.currentUser;
+                  List<String>? workoutDoneToday = await workoutService.getUserProgressByDay(currentUser!.uid, DateTime.now().weekday-1);
+                  if(workoutDoneToday!.isNotEmpty)
+                  {
+                    showDialog(
+                        context: context,
+                        builder: (context)
+                        {
+                          return AlertDialog(
+                              title: const Center(child:Text("Cannot change workout type if you have done at least 1 exercise today.")),
+                              content: const Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Center(child:Text("Try again tomorrow"))
+                                        ],
+                              ),
+                              actions: [
+                                Center(child:
+                                TextButton(
+                                  onPressed: (){
+                                    Navigator.pop(context); // Close the dialog
+                                    setState(() {});
+                                  },
+                                  child: const Text("Okay"),
+                                ),)
+                              ],
+                          );
+                        }
+                    );
+                    return;
+                  }
                   Navigator.pushReplacement(
                     context,
                     MaterialPageRoute(builder: (context) => CalibrationPage()),
