@@ -4,8 +4,6 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'forum_page.dart';
 import 'reply_page.dart';
-
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:software_engineering_project/services/workout_plan_service.dart';
@@ -226,8 +224,7 @@ class _HomePageState extends State<HomePage> {
 
               const SizedBox(height: 16),
               // Today's plan from rici api
-
-              FutureBuilder(
+              Container(child:FutureBuilder(
                 future: userService.getUserWorkoutCategory(currUid ?? ""),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -285,7 +282,7 @@ class _HomePageState extends State<HomePage> {
 
                         Map<String, dynamic>? exercisesOfDay = snapshot.data?[0] as Map<String, dynamic>;
                         List<String> doneExercisesOfDay = snapshot.data?[1] as List<String>;
-
+                        print(exercisesOfDay);
                         return ListView.builder(
                           itemCount: exercisesOfDay["exercises"].length ?? 0,
                           itemBuilder: (context, index) {
@@ -302,6 +299,10 @@ class _HomePageState extends State<HomePage> {
                                 : (exerciseReps == null ? "" : "$exerciseSets sets, $exerciseReps reps each"));
 
                             var currIsBlacked = doneExercisesOfDay.contains(currIndexExercise["name"]);
+
+                            print(exerciseDetails);
+                            print(exerciseDetailsText);
+                            print(currIndexExercise);
 
                             return GestureDetector(
                               onTap: () {
@@ -367,7 +368,8 @@ class _HomePageState extends State<HomePage> {
                     },
                   );
                 },
-              ),
+              ),width:200, height:100),
+
 
 
 
@@ -388,10 +390,10 @@ class _HomePageState extends State<HomePage> {
               ),
               StreakChart(completedDays: 4),
               const SizedBox(height: 20),
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
+                  const Text(
                     "Points",
                     style: TextStyle(
                       fontSize: 20,
@@ -399,7 +401,19 @@ class _HomePageState extends State<HomePage> {
                       color: Colors.black,
                     ),
                   ),
-                  Text('270 points'),
+                  FutureBuilder(
+                      future: userService.getUserPoint(currUid??""),
+                      builder: (context, snapshot)
+                      {
+                        if(snapshot.connectionState == ConnectionState.waiting)
+                        {
+                          return Center(child:CircularProgressIndicator());
+                        }
+                        int currPoints =  snapshot.data??0;
+                        return Text("$currPoints points");
+                      }
+                  ),
+
                 ],
               ),
               PointsChart(points: [100, 50, 30, 90, 0, 0, 0]),
