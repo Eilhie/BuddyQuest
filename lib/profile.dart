@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'login_page.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-import 'avatar_selection_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'setting_page.dart';
@@ -16,37 +13,56 @@ class ProfilePage extends StatefulWidget {
 
 class _ProfilePageState extends State<ProfilePage> {
   String _profileImage = 'assets/profiles/boy-default.png'; // Default profile image
+  String _fullName = 'Guest';
+  int _followerCount = 0;
+  int _followingCount = 0;
+  List<Map<String, dynamic>> _userPosts = [];
 
   @override
   void initState() {
     super.initState();
-    _loadProfileImage();
+    _loadProfileData();
   }
 
-  Future<void> _loadProfileImage() async {
+  Future<void> _loadProfileData() async {
     final currentUser = FirebaseAuth.instance.currentUser;
     if (currentUser != null) {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
+      final userDoc = FirebaseFirestore.instance.collection('users').doc(currentUser.uid);
+
+      // Fetch user data
+      final doc = await userDoc.get();
       if (doc.exists) {
-        final avatarFilename = doc.data()?['avatar'];
-        if (avatarFilename != null && avatarFilename.isNotEmpty) {
-          setState(() {
+        final data = doc.data();
+        setState(() {
+          _fullName = data?['fullname'] ?? 'Guest';
+          final avatarFilename = data?['avatar'];
+          if (avatarFilename != null && avatarFilename.isNotEmpty) {
             _profileImage = 'assets/profiles/$avatarFilename';
-          });
-        }
+          }
+        });
       }
-    }
-  }
 
-  Future<String> _getUserFullName() async {
-    final currentUser = FirebaseAuth.instance.currentUser;
-    if (currentUser != null) {
-      final doc = await FirebaseFirestore.instance.collection('users').doc(currentUser.uid).get();
-      if (doc.exists) {
-        return doc.data()?['fullname'] ?? 'Guest';
-      }
+      // Count followers
+      final followersSnapshot = await userDoc.collection('followers').get();
+      setState(() {
+        _followerCount = followersSnapshot.docs.length;
+      });
+
+      // Count following
+      final followingSnapshot = await userDoc.collection('following').get();
+      setState(() {
+        _followingCount = followingSnapshot.docs.length;
+      });
+
+      // Fetch user posts
+      final postsSnapshot = await FirebaseFirestore.instance
+          .collection('forum')
+          .where('uid', isEqualTo: currentUser.uid)
+          .get();
+      setState(() {
+        _userPosts = postsSnapshot.docs.map((doc) => doc.data()).toList();
+      });
     }
-    return 'Guest'; // Default value if no user or fullname found
   }
 
   @override
@@ -76,11 +92,10 @@ class _ProfilePageState extends State<ProfilePage> {
                 IconButton(
                   icon: const Icon(Icons.settings),
                   onPressed: () {
-                    // Navigate to Settings Page or Open Settings
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => SettingsPage(), // Navigate to the ReplyPage
+                        builder: (context) => SettingsPage(),
                       ),
                     );
                   },
@@ -90,45 +105,39 @@ class _ProfilePageState extends State<ProfilePage> {
             SizedBox(height: 40),
             Row(
               children: [
-                // left side
                 Expanded(
                   flex: 1,
-                  child: Container(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        CircleAvatar(
-                          radius: 55, // Adjust size
-                          backgroundImage: AssetImage(_profileImage), // Profile Image
-                        ),
-                      ],
-                    ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      CircleAvatar(
+                        radius: 55,
+                        backgroundImage: AssetImage(_profileImage),
+                      ),
+                    ],
                   ),
                 ),
-                // Right side
                 Expanded(
                   flex: 1,
-                  child: Container(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        ElevatedButton(
-                            onPressed: () {
-                              print('Follow Button Pressed');
-                            },
-                            child: Text("Follow")
-                        ),
-                      ],
-                    ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          print('Follow Button Pressed');
+                        },
+                        child: Text("Follow"),
+                      ),
+                    ],
                   ),
                 ),
               ],
             ),
             SizedBox(height: 10),
             Text(
-              'Full name',
+              _fullName,
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -140,7 +149,6 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 GestureDetector(
                   onTap: () {
-                    // Navigate to the "Following" page
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => FollowingFollowersPage()),
@@ -150,7 +158,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '552 ', // Replace with actual count
+                          text: '$_followingCount ',
                           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 16),
                         ),
                         TextSpan(
@@ -163,7 +171,6 @@ class _ProfilePageState extends State<ProfilePage> {
                 ),
                 GestureDetector(
                   onTap: () {
-                    // Navigate to the "Followers" page
                     Navigator.push(
                       context,
                       MaterialPageRoute(builder: (context) => FollowingFollowersPage()),
@@ -173,7 +180,7 @@ class _ProfilePageState extends State<ProfilePage> {
                     text: TextSpan(
                       children: [
                         TextSpan(
-                          text: '343 ', // Replace with actual count
+                          text: '$_followerCount ',
                           style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey, fontSize: 16),
                         ),
                         TextSpan(
@@ -188,32 +195,24 @@ class _ProfilePageState extends State<ProfilePage> {
             ),
             SizedBox(height: 20),
             Divider(
-              color: Colors.grey, // Color of the line
-              thickness: 1,       // Thickness of the line
-              indent: 0,         // Start margin
-              endIndent: 0,      // End margin
+              color: Colors.grey,
+              thickness: 1,
             ),
-            // Post Cards Section
             SizedBox(height: 20),
             Text(
               'Recent Posts',
               style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 10),
-            _buildPostCard(),
-            _buildPostCard(),
-            _buildPostCard(),
+            ..._userPosts.map((post) => _buildPostCard(post)).toList(),
           ],
         ),
       ),
-
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: 3,
         onTap: (index) {
-          // Handle navigation
           if (index == 3) {
-            // Already on Profile page
           } else if (index == 1) {
             Navigator.pushNamed(context, '/workout');
           } else if (index == 2) {
@@ -248,8 +247,7 @@ class _ProfilePageState extends State<ProfilePage> {
     );
   }
 
-  // Post Card Widget
-  Widget _buildPostCard() {
+  Widget _buildPostCard(Map<String, dynamic> post) {
     return Card(
       margin: EdgeInsets.only(bottom: 15),
       elevation: 5,
@@ -262,18 +260,18 @@ class _ProfilePageState extends State<ProfilePage> {
               children: [
                 CircleAvatar(
                   radius: 25,
-                  backgroundImage: AssetImage('assets/profiles/boy-default.png'), // Replace with post owner image
+                  backgroundImage: AssetImage(_profileImage),
                 ),
                 SizedBox(width: 10),
                 Text(
-                  'User Name', // Replace with post owner name
+                  _fullName,
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             SizedBox(height: 10),
             Text(
-              'This is a post description, showcasing some content by the user.',
+              post['content'] ?? 'No content available',
               style: TextStyle(fontSize: 16),
             ),
             SizedBox(height: 10),
