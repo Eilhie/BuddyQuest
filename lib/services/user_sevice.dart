@@ -133,6 +133,7 @@ class UserService
   {
     try
     {
+      print("Enter addUserPoints");
       var collectionReference = user_collection.doc(uid);
       var querySnapshot = await collectionReference.get();
       if(querySnapshot.exists)
@@ -164,7 +165,7 @@ class UserService
         }
         lastStreakUpdate = currDate;
         int currPoints = objMap["points"];
-        int newPoints = currPoints + ((pointsToAdd + 0.1*min(currStreak-1, 7)*pointsToAdd) as int);
+        int newPoints = currPoints + ((pointsToAdd + 0.1*min(currStreak-1, 7)*pointsToAdd).round());
         objMap["points"] = newPoints;
         objMap["lastStreakUpdate"] = lastStreakUpdate;
         objMap["currentStreak"] = currStreak;

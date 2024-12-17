@@ -206,7 +206,7 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                                           return GestureDetector(
                                               onTap:(){
                                                 if(!currIsBlacked) //not blacked out
-                                                    {
+                                                {
                                                   showDialog(
                                                     context: context,
                                                     builder: (BuildContext context) {
@@ -226,11 +226,40 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                                                         actions: [
                                                           TextButton(
                                                             onPressed: () async {
-                                                              await workoutPlanService.updateUserProgressByDay(currUid, listOfDays.indexWhere((dow)=>dow==selectedDay), currIndexExercise["name"]);
-                                                              await userService.addUserPoints(currUid??"", 50);
-                                                              //blackout current card
                                                               Navigator.pop(context); // Close the dialog
+                                                              DateTime currDate = DateTime.now();
+                                                              if(selectedDay == listOfDays[currDate.weekday-1])
+                                                              {
+                                                                await workoutPlanService.updateUserProgressByDay(currUid, listOfDays.indexWhere((dow)=>dow==selectedDay), currIndexExercise["name"]);
+                                                                await userService.addUserPoints(currUid??"", 50);
+                                                              }
+                                                              else
+                                                              {
+                                                                showDialog(
+                                                                    context: context,
+                                                                    builder: (context)
+                                                                    {
+                                                                      Future.delayed(Duration(seconds:2), (){Navigator.pop(context);});
+                                                                      return Align(alignment: Alignment.topCenter,
+                                                                          child:
+                                                                          Card(
+                                                                              elevation: 5,
+                                                                              child:
+                                                                              Container(width:500, height:50,
+                                                                                child:
+                                                                                Center(child :
+                                                                                Text("You can only finish a workout in the current day!", style:TextStyle(color:Colors.deepPurple))
+                                                                                ),
+                                                                              )
+                                                                          )
+                                                                      );
+                                                                    },
+                                                                    barrierColor:Colors.white.withOpacity(0)
+                                                                );
+                                                              }
+                                                              //blackout current card
                                                               setState(() {});
+
                                                             },
                                                             child: Text("Finish Workout"),
                                                           ),
