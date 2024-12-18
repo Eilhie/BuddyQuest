@@ -325,14 +325,14 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
 
                                                       // Dynamic GIF Display
                                                       AspectRatio(
-                                                        aspectRatio: 1.78, // Set the aspect ratio of your GIF (e.g., 16:9)
+                                                        aspectRatio: 1.78,
                                                         child: Center(
                                                           child: Image.asset(
                                                             workoutGifs[currIndexExercise["name"]] ??
-                                                                'assets/workoutAsset/Test.gif',
-                                                            fit: BoxFit.contain,
+                                                                'assets/workoutAsset/GIF_Bicycle.gif', // Fallback GIF if not found
+                                                            fit: BoxFit.contain, // Ensure GIF fits properly
                                                           ),
-                                                        ),
+                                                        )
                                                       ),
                                                       SizedBox(height: 20),
 
