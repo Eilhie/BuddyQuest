@@ -178,7 +178,7 @@ class WorkoutPlanService
   Future<List<bool>?> getDidWorkoutList(String uid) async
   {
     try {
-      var collectionReference = workout_plans.doc(uid);
+      var collectionReference = user_weekly_workout_progress.doc(uid);
       var querySnapshot = await collectionReference.get();
       if (querySnapshot.exists) {
         Map<String, dynamic> objMap = querySnapshot.data() as Map<String, dynamic>;

@@ -390,7 +390,7 @@ class _HomePageState extends State<HomePage> {
                   Text('4/7 days'),
                 ],
               ),
-              StreakChart(completedDays: 4),
+              StreakChart(),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -644,45 +644,58 @@ class _HomePageState extends State<HomePage> {
 
 // Streak Chart Widget (UI Only)
 class StreakChart extends StatelessWidget {
-  final int completedDays; // Number of completed streak days out of 7
+  List<bool> completedDays = []; // Number of completed streak days out of 7
   final List<String> weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  StreakChart({required this.completedDays});
+  final workoutService = WorkoutPlanService();
+  final currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(7, (index) {
-        bool isCompleted = index < completedDays;
-        return Column(
-          children: [
-            Container(
-              height: 60,
-              width: 45,
-              decoration: BoxDecoration(
-                color: isCompleted ? Colors.black : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(20.0),
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.check_circle,
-                  color: isCompleted ? Colors.green : Colors.grey,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              weekDays[index],
-              style: TextStyle(
-                color: isCompleted ? Colors.black : Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        );
-      }),
-    );
+    var currUid = currentUser?.uid??"";
+    return FutureBuilder(
+        future: workoutService.getDidWorkoutList(currUid),
+        builder: (context, snapshot)
+        {
+          if(snapshot.connectionState == ConnectionState.waiting)
+          {
+            Center(child: CircularProgressIndicator());
+          }
+          print("BUILD STREAK CHART");
+          print(snapshot.data);
+          completedDays = (snapshot.data??[false,false,false,false,false,false,false]) as List<bool>;
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (index) {
+              bool isCompleted = completedDays[index];
+              return Column(
+                children: [
+                  Container(
+                    height: 60,
+                    width: 45,
+                    decoration: BoxDecoration(
+                      color: isCompleted ? Colors.black : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(20.0),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.check_circle,
+                        color: isCompleted ? Colors.green : Colors.grey,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    weekDays[index],
+                    style: TextStyle(
+                      color: isCompleted ? Colors.black : Colors.grey,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              );
+            }),
+          );
+        });
   }
 }
 
