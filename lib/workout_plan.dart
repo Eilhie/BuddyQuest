@@ -33,7 +33,6 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
   final Map<String, String> workoutGifs = {
     'Pushup': 'assets/workoutAsset/GIF_PushUp.gif',
     'Squat': 'assets/workoutAsset/GIF_Squad_with_Dumbell.gif',
-    'Jumping Jack': 'assets/jumping_jack.gif',
     'Plank': 'assets/workoutAsset/GIF_PLANK_CHICK.gif'
     // Add more workouts and their respective GIFs here
   };
