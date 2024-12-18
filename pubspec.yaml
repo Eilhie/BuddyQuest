@@ -71,6 +71,7 @@ flutter:
     - assets/profiles/
     - assets/logo/
     - assets/additional/
+    - assets/workoutAsset/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
