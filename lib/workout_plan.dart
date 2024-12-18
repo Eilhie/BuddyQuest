@@ -427,8 +427,51 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
                     },
                   ),
                 ),
+
               ],
             ),
+          ),
+          bottomNavigationBar: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            currentIndex: 1,
+            onTap: (index) {
+              switch (index) {
+                case 0:
+                  Navigator.pushNamed(context, '/home');
+                  break;
+                case 1:
+                  Navigator.pushNamed(context, '/workout');
+                  break;
+                case 2:
+                  Navigator.pushNamed(context, '/leaderboard');
+                  break;
+                case 3:
+                  Navigator.pushNamed(context, '/profile');
+                  break;
+              }
+            },
+            selectedItemColor: Colors.deepPurple,
+            unselectedItemColor: Colors.black,
+            showSelectedLabels: true,
+            showUnselectedLabels: false,
+            items: [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.pie_chart),
+                label: 'Home',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.fitness_center),
+                label: 'Workout',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.leaderboard),
+                label: 'Leaderboard',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.person),
+                label: 'Profile',
+              ),
+            ],
           ),
         );
       },

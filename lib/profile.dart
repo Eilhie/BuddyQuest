@@ -126,14 +126,6 @@ class _ProfilePageState extends State<ProfilePage> {
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.end,
-                        children: [
-                          ElevatedButton(
-                            onPressed: () {
-                              print('Follow Button Pressed');
-                            },
-                            child: Text("Follow"),
-                          ),
-                        ],
                       ),
                     ),
                   ],

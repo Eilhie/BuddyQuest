@@ -22,7 +22,7 @@ class EditProfilePage extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   IconButton(
-                    icon: Icon(Icons.arrow_back),
+                    icon: const Icon(Icons.arrow_back),
                     onPressed: () {
                       Navigator.pop(context);
                     },
@@ -34,13 +34,8 @@ class EditProfilePage extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  IconButton(
-                    icon: Icon(Icons.settings),
-                    onPressed: () {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Settings button pressed')),
-                      );
-                    },
+                  const Text(
+                      '             '
                   ),
                 ],
               ),
