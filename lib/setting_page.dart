@@ -115,7 +115,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     title: fullname,
                     subtitle: 'Tap to edit User Info',
                     onTap: () {
-                      Navigator.pushNamed(context, '/editProfile');
+                      Navigator.pushNamed(context, '/editProfile').then((_)=>setState((){}));
                     },
                   );
                 },
