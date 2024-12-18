@@ -223,7 +223,8 @@ class _HomePageState extends State<HomePage> {
               ),
 
               // Today's plan from rici api
-              Container(child:FutureBuilder(
+            Container(
+              child: FutureBuilder(
                 future: userService.getUserWorkoutCategory(currUid ?? ""),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -231,8 +232,14 @@ class _HomePageState extends State<HomePage> {
                   }
                   return FutureBuilder(
                     future: Future.wait([
-                      workoutPlanService.getExcerciseByCategoryDay(snapshot.data ?? "", listOfDays.indexWhere((dow) => dow == selectedDay)),
-                      workoutPlanService.getUserProgressByDay(currUid, listOfDays.indexWhere((dow) => dow == selectedDay))
+                      workoutPlanService.getExcerciseByCategoryDay(
+                        snapshot.data ?? "",
+                        listOfDays.indexWhere((dow) => dow == selectedDay),
+                      ),
+                      workoutPlanService.getUserProgressByDay(
+                        currUid,
+                        listOfDays.indexWhere((dow) => dow == selectedDay),
+                      )
                     ]),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -245,11 +252,11 @@ class _HomePageState extends State<HomePage> {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.beach_access, // Icon representing rest, like a beach or vacation icon
+                                  Icons.beach_access, // Icon representing rest
                                   size: 60,
                                   color: Colors.deepPurple,
                                 ),
-                                SizedBox(width: 20), // Spacing between icon and text
+                                SizedBox(width: 20),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -278,11 +285,12 @@ class _HomePageState extends State<HomePage> {
                           );
                         }
 
-
                         Map<String, dynamic>? exercisesOfDay = snapshot.data?[0] as Map<String, dynamic>;
                         List<String> doneExercisesOfDay = snapshot.data?[1] as List<String>;
-                        print(exercisesOfDay);
+
                         return ListView.builder(
+                          shrinkWrap: true, // Ensures the ListView's height is determined by its content
+                          physics: NeverScrollableScrollPhysics(), // Prevents scrolling inside the ListView
                           itemCount: exercisesOfDay["exercises"].length ?? 0,
                           itemBuilder: (context, index) {
                             Map<String, dynamic> currIndexExercise = exercisesOfDay["exercises"][index];
@@ -299,14 +307,9 @@ class _HomePageState extends State<HomePage> {
 
                             var currIsBlacked = doneExercisesOfDay.contains(currIndexExercise["name"]);
 
-                            print(exerciseDetails);
-                            print(exerciseDetailsText);
-                            print(currIndexExercise);
-
                             return GestureDetector(
                               onTap: () {
                                 if (!currIsBlacked) {
-                                  // Not blacked out
                                   showDialog(
                                     context: context,
                                     builder: (BuildContext context) {
@@ -326,17 +329,20 @@ class _HomePageState extends State<HomePage> {
                                         actions: [
                                           TextButton(
                                             onPressed: () async {
-                                              await workoutPlanService.updateUserProgressByDay(currUid, listOfDays.indexWhere((dow) => dow == selectedDay), currIndexExercise["name"]);
+                                              await workoutPlanService.updateUserProgressByDay(
+                                                currUid,
+                                                listOfDays.indexWhere((dow) => dow == selectedDay),
+                                                currIndexExercise["name"],
+                                              );
                                               await userService.addUserPoints(currUid ?? "", 50);
-                                              // Blackout current card
-                                              Navigator.pop(context); // Close the dialog
+                                              Navigator.pop(context);
                                               setState(() {});
                                             },
                                             child: Text("Finish Workout"),
                                           ),
                                           TextButton(
                                             onPressed: () {
-                                              Navigator.pop(context); // Close the dialog
+                                              Navigator.pop(context);
                                             },
                                             child: Text("Close"),
                                           ),
@@ -349,7 +355,7 @@ class _HomePageState extends State<HomePage> {
                               child: Card(
                                 elevation: 3,
                                 margin: EdgeInsets.symmetric(vertical: 8),
-                                color: currIsBlacked ? Colors.green.withOpacity(0.5) : null, // Blackout effect for individual card
+                                color: currIsBlacked ? Colors.green.withOpacity(0.5) : null,
                                 child: ListTile(
                                   leading: Icon(Icons.fitness_center, color: Colors.deepPurple),
                                   title: Text(
@@ -368,14 +374,13 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
               ),
-                width: MediaQuery.of(context).size.width, // 80% of screen width
-                height: MediaQuery.of(context).size.height * 0.35, // 20% of screen height
-              ),
+              width: MediaQuery.of(context).size.width,
+            ),
 
 
 
 
-              const SizedBox(height: 30),
+            const SizedBox(height: 30),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
