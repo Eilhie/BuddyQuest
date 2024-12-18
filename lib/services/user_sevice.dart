@@ -166,6 +166,7 @@ class UserService
         lastStreakUpdate = currDate;
         int currPoints = objMap["points"];
         int newPoints = currPoints + ((pointsToAdd + 0.1*min(currStreak-1, 7)*pointsToAdd).round());
+        await workoutService.updateGainedPointsByDay(uid, currDate.weekday-1, ((pointsToAdd + 0.1*min(currStreak-1, 7)*pointsToAdd).round()));
         objMap["points"] = newPoints;
         objMap["lastStreakUpdate"] = lastStreakUpdate;
         objMap["currentStreak"] = currStreak;

@@ -49,8 +49,9 @@ class WorkoutPlanService
       }
       else {
         Map<String, dynamic> objMap = queryDocumentSnapshot[0].data() as Map<String, dynamic>;
-        List<String> workoutList = List<String>.from(objMap["day$dayIdx"] as List);
-        return workoutList;
+        Map<String, dynamic> workoutProgress = objMap["day$dayIdx"];
+        List<String> doneExercises = List<String>.from(workoutProgress["done_exercises"] as List);
+        return doneExercises;
       }
     }
     catch(e)
@@ -70,9 +71,10 @@ class WorkoutPlanService
       if(querySnapshot.exists)
       {
         Map<String, dynamic> objMap = querySnapshot.data() as Map<String, dynamic>;
-        List<String> progressForDay = List<String>.from(objMap["day$dayIdx"] as List);
-        progressForDay.add(workoutName);
-        objMap["day$dayIdx"] = progressForDay;
+        Map<String, dynamic> workoutProgressForDay = objMap["day$dayIdx"];
+        List<String> doneExercises = List<String>.from(workoutProgressForDay["done_exercises"] as List);
+        doneExercises.add(workoutName);
+        objMap["day$dayIdx"]["done_exercises"] = doneExercises;
         collectionReference.update(objMap);
       }
       else
@@ -108,7 +110,8 @@ class WorkoutPlanService
         {//reset workout progress and set last update to next monday
           for(int i=0;i<7;i++)
           {
-            objMap["day$i"] = <String>[];
+            objMap["day$i"]["done_exercises"] = <String>[];
+            objMap["day$i"]["points_earned"] = 0;
           }
           objMap["last_update"] = nextMonday;
           collectionReference.update(objMap);
@@ -121,6 +124,78 @@ class WorkoutPlanService
       print(e);
     }
 
+  }
+
+  // add history pertambahan poin
+  Future<void> updateGainedPointsByDay(String uid, int dayIdx, int pointsGained) async
+  {
+    try
+    {
+      var collectionReference = user_weekly_workout_progress.doc(uid);
+      var querySnapshot = await collectionReference.get();
+      if(querySnapshot.exists)
+      {
+        Map<String, dynamic> objMap = querySnapshot.data() as Map<String, dynamic>;
+        objMap["day$dayIdx"]["points_earned"] += pointsGained;
+        collectionReference.update(objMap);
+      }
+    }
+    catch(e)
+    {
+      print("Add point history failed");
+      print(e);
+    }
+  }
+
+  //Data untuk chart
+  Future<List<int>?> getPointsList(String uid) async
+  {
+    try {
+      var collectionReference = user_weekly_workout_progress.doc(uid);
+      var querySnapshot = await collectionReference.get();
+      print("POINTS LIST");
+      if (querySnapshot.exists) {
+        Map<String, dynamic> objMap = querySnapshot.data() as Map<String, dynamic>;
+        List<int> pointsList= [];
+        for(int i=0;i<7;i++)
+        {
+          pointsList.add(objMap["day$i"]["points_earned"]);
+        }
+
+        print(pointsList);
+        return pointsList;
+      }
+    }catch(e)
+    {
+      print("Get Points List failed ");
+      print(e);
+    }
+    return null;
+  }
+
+
+  //Data untuk chart
+  Future<List<bool>?> getDidWorkoutList(String uid) async
+  {
+    try {
+      var collectionReference = workout_plans.doc(uid);
+      var querySnapshot = await collectionReference.get();
+      if (querySnapshot.exists) {
+        Map<String, dynamic> objMap = querySnapshot.data() as Map<String, dynamic>;
+        List<bool> doneList= [];
+        for(int i=0;i<7;i++)
+        {
+          List<String> doneExercises = List<String>.from(objMap["day$i"]["done_exercises"] as List);
+          doneList.add(doneExercises.isNotEmpty);
+        }
+        return doneList;
+      }
+    }catch(e)
+    {
+      print("Get Done Exercise List failed ");
+      print(e);
+    }
+    return null;
   }
 
   Future<DateTime?> getNextWorkoutDay(String category, DateTime date) async

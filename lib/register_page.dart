@@ -90,13 +90,13 @@ class _RegisterPageState extends State<RegisterPage> {
           'last_update': currDate
               .add(Duration(days: (7 - currDate.weekday + 1)))
               .subtract(Duration(hours: currDate.hour, minutes: currDate.minute)),
-          'day0': <String>[],
-          'day1': <String>[],
-          'day2': <String>[],
-          'day3': <String>[],
-          'day4': <String>[],
-          'day5': <String>[],
-          'day6': <String>[]
+          'day0': <String, dynamic>{"done_exercises":<String>[], "points_earned":0},
+          'day1': <String, dynamic>{"done_exercises":<String>[], "points_earned":0},
+          'day2': <String, dynamic>{"done_exercises":<String>[], "points_earned":0},
+          'day3': <String, dynamic>{"done_exercises":<String>[], "points_earned":0},
+          'day4': <String, dynamic>{"done_exercises":<String>[], "points_earned":0},
+          'day5': <String, dynamic>{"done_exercises":<String>[], "points_earned":0},
+          'day6': <String, dynamic>{"done_exercises":<String>[], "points_earned":0},
         });
 
         Navigator.pushReplacement(
