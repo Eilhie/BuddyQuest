@@ -12,6 +12,28 @@ class UserService
 
   }
 
+  //get pp path
+  Future<String?> getUserProfilePicture(String uid) async
+  {
+    try
+    {
+      var collectionReference = user_collection.doc(uid);
+      var querySnapshot = await collectionReference.get();
+      if(querySnapshot.exists)
+      {
+        Map<String, dynamic> objMap = querySnapshot.data() as Map<String, dynamic>;
+        String profilePath = objMap["avatar"];
+        print(profilePath);
+        return profilePath;
+      }
+    }
+    catch(e)
+    {
+      print(e);
+    }
+    return null;
+  }
+
   //get workout_type / category user
   Future<String?> getUserWorkoutCategory(String uid) async
   {

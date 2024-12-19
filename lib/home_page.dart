@@ -223,7 +223,8 @@ class _HomePageState extends State<HomePage> {
               ),
 
               // Today's plan from rici api
-              Container(child:FutureBuilder(
+            Container(
+              child: FutureBuilder(
                 future: userService.getUserWorkoutCategory(currUid ?? ""),
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
@@ -231,8 +232,14 @@ class _HomePageState extends State<HomePage> {
                   }
                   return FutureBuilder(
                     future: Future.wait([
-                      workoutPlanService.getExcerciseByCategoryDay(snapshot.data ?? "", listOfDays.indexWhere((dow) => dow == selectedDay)),
-                      workoutPlanService.getUserProgressByDay(currUid, listOfDays.indexWhere((dow) => dow == selectedDay))
+                      workoutPlanService.getExcerciseByCategoryDay(
+                        snapshot.data ?? "",
+                        listOfDays.indexWhere((dow) => dow == selectedDay),
+                      ),
+                      workoutPlanService.getUserProgressByDay(
+                        currUid,
+                        listOfDays.indexWhere((dow) => dow == selectedDay),
+                      )
                     ]),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
@@ -245,11 +252,11 @@ class _HomePageState extends State<HomePage> {
                               crossAxisAlignment: CrossAxisAlignment.center,
                               children: [
                                 Icon(
-                                  Icons.beach_access, // Icon representing rest, like a beach or vacation icon
+                                  Icons.beach_access, // Icon representing rest
                                   size: 60,
                                   color: Colors.deepPurple,
                                 ),
-                                SizedBox(width: 20), // Spacing between icon and text
+                                SizedBox(width: 20),
                                 Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
@@ -278,11 +285,12 @@ class _HomePageState extends State<HomePage> {
                           );
                         }
 
-
                         Map<String, dynamic>? exercisesOfDay = snapshot.data?[0] as Map<String, dynamic>;
                         List<String> doneExercisesOfDay = snapshot.data?[1] as List<String>;
-                        print(exercisesOfDay);
+
                         return ListView.builder(
+                          shrinkWrap: true, // Ensures the ListView's height is determined by its content
+                          physics: NeverScrollableScrollPhysics(), // Prevents scrolling inside the ListView
                           itemCount: exercisesOfDay["exercises"].length ?? 0,
                           itemBuilder: (context, index) {
                             Map<String, dynamic> currIndexExercise = exercisesOfDay["exercises"][index];
@@ -299,14 +307,9 @@ class _HomePageState extends State<HomePage> {
 
                             var currIsBlacked = doneExercisesOfDay.contains(currIndexExercise["name"]);
 
-                            print(exerciseDetails);
-                            print(exerciseDetailsText);
-                            print(currIndexExercise);
-
                             return GestureDetector(
                               onTap: () {
                                 if (!currIsBlacked) {
-                                  // Not blacked out
                                   showDialog(
                                     context: context,
                                     builder: (BuildContext context) {
@@ -326,17 +329,20 @@ class _HomePageState extends State<HomePage> {
                                         actions: [
                                           TextButton(
                                             onPressed: () async {
-                                              await workoutPlanService.updateUserProgressByDay(currUid, listOfDays.indexWhere((dow) => dow == selectedDay), currIndexExercise["name"]);
+                                              await workoutPlanService.updateUserProgressByDay(
+                                                currUid,
+                                                listOfDays.indexWhere((dow) => dow == selectedDay),
+                                                currIndexExercise["name"],
+                                              );
                                               await userService.addUserPoints(currUid ?? "", 50);
-                                              // Blackout current card
-                                              Navigator.pop(context); // Close the dialog
+                                              Navigator.pop(context);
                                               setState(() {});
                                             },
                                             child: Text("Finish Workout"),
                                           ),
                                           TextButton(
                                             onPressed: () {
-                                              Navigator.pop(context); // Close the dialog
+                                              Navigator.pop(context);
                                             },
                                             child: Text("Close"),
                                           ),
@@ -349,7 +355,7 @@ class _HomePageState extends State<HomePage> {
                               child: Card(
                                 elevation: 3,
                                 margin: EdgeInsets.symmetric(vertical: 8),
-                                color: currIsBlacked ? Colors.green.withOpacity(0.5) : null, // Blackout effect for individual card
+                                color: currIsBlacked ? Colors.green.withOpacity(0.5) : null,
                                 child: ListTile(
                                   leading: Icon(Icons.fitness_center, color: Colors.deepPurple),
                                   title: Text(
@@ -368,14 +374,13 @@ class _HomePageState extends State<HomePage> {
                   );
                 },
               ),
-                width: MediaQuery.of(context).size.width, // 80% of screen width
-                height: MediaQuery.of(context).size.height * 0.35, // 20% of screen height
-              ),
+              width: MediaQuery.of(context).size.width,
+            ),
 
 
 
 
-              const SizedBox(height: 30),
+            const SizedBox(height: 30),
               const Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
@@ -390,7 +395,7 @@ class _HomePageState extends State<HomePage> {
                   Text('4/7 days'),
                 ],
               ),
-              StreakChart(completedDays: 4),
+              StreakChart(),
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -418,7 +423,7 @@ class _HomePageState extends State<HomePage> {
 
                 ],
               ),
-              PointsChart(points: [100, 50, 30, 90, 0, 0, 0]),
+              PointsChart(),
               const SizedBox(height: 30),
               const Text(
                 "Latest Forum",
@@ -436,12 +441,22 @@ class _HomePageState extends State<HomePage> {
                   final post = postDoc.data() as Map<String, dynamic>;
                   return Column(
                     children: [
-                      _buildForumCard(
-                        postDoc.id,
-                        post['fullname'] ?? 'Unknown',
-                        post['content'] ?? '',
-                        post['likes'] ?? 0,
-                        post['timestamp'] as Timestamp?,
+                      FutureBuilder(
+                          future: userService.getUserProfilePicture(currUid!),
+                          builder: (context, snapshot)
+                          {
+                            if(snapshot.connectionState == ConnectionState.waiting)
+                            {
+                              return Center(child:CircularProgressIndicator());
+                            }
+                            return _buildForumCard(postDoc.id,
+                              post['fullname'] ?? 'Unknown',
+                              post['content'] ?? '',
+                              post['likes'] ?? 0,
+                              post['timestamp'] as Timestamp?,
+                              snapshot.data!
+                            );
+                          }
                       ),
                       const SizedBox(height: 20), // Add space after each forum card
                     ],
@@ -511,7 +526,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp) {
+  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp, String profileImage) {
     String formattedTime = "Unknown Time";
     if (timestamp != null) {
       final dateTime = timestamp.toDate();
@@ -519,7 +534,8 @@ class _HomePageState extends State<HomePage> {
       "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year} "
           "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
     }
-
+    UserService userService = UserService();
+    final profilePath = "assets/profiles/$profileImage";
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
@@ -539,9 +555,8 @@ class _HomePageState extends State<HomePage> {
         children: [
           Row(
             children: [
-              const CircleAvatar(
-                backgroundColor: Colors.green,
-                child: Icon(Icons.person, color: Colors.white),
+              CircleAvatar(
+                  backgroundImage: AssetImage(profilePath)
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -637,6 +652,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+
   }
 
 
@@ -644,104 +660,130 @@ class _HomePageState extends State<HomePage> {
 
 // Streak Chart Widget (UI Only)
 class StreakChart extends StatelessWidget {
-  final int completedDays; // Number of completed streak days out of 7
-  final List<String> weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
-  StreakChart({required this.completedDays});
+  List<bool> completedDays = []; // Number of completed streak days out of 7
+  final List<String> weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  final workoutService = WorkoutPlanService();
+  final currentUser = FirebaseAuth.instance.currentUser;
 
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(7, (index) {
-        bool isCompleted = index < completedDays;
-        return Column(
-          children: [
-            Container(
-              height: 60,
-              width: 45,
-              decoration: BoxDecoration(
-                color: isCompleted ? Colors.black : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(20.0),
-              ),
-              child: Center(
-                child: Icon(
-                  Icons.check_circle,
-                  color: isCompleted ? Colors.green : Colors.grey,
-                ),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              weekDays[index],
-              style: TextStyle(
-                color: isCompleted ? Colors.black : Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        );
-      }),
-    );
+    var currUid = currentUser?.uid??"";
+    return FutureBuilder(
+        future: workoutService.getDidWorkoutList(currUid),
+        builder: (context, snapshot)
+        {
+          if(snapshot.connectionState == ConnectionState.waiting)
+          {
+            Center(child: CircularProgressIndicator());
+          }
+          print("BUILD STREAK CHART");
+          print(snapshot.data);
+          completedDays = (snapshot.data??[false,false,false,false,false,false,false]) as List<bool>;
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (index) {
+              bool isCompleted = completedDays[index];
+              return Column(
+                children: [
+                  Container(
+                    height: 60,
+                    width: 45,
+                    decoration: BoxDecoration(
+                      color: isCompleted ? Colors.black : Colors.grey.shade200,
+                      borderRadius: BorderRadius.circular(20.0),
+                    ),
+                    child: Center(
+                      child: Icon(
+                        Icons.check_circle,
+                        color: isCompleted ? Colors.green : Colors.grey,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    weekDays[index],
+                    style: TextStyle(
+                      color: isCompleted ? Colors.black : Colors.grey,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              );
+            }),
+          );
+        });
   }
 }
 
 class PointsChart extends StatelessWidget {
-  final List<int> points; // List containing the points for each day
-  final List<String> weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  List<int> points = []; // List containing the points for each day
+  final List<String> weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  final workoutPlanService = WorkoutPlanService();
+  final currentUser = FirebaseAuth.instance.currentUser;
 
-  PointsChart({required this.points});
 
   @override
   Widget build(BuildContext context) {
-    int maxHeight = points.isNotEmpty ? points.reduce((a, b) => a > b ? a : b) : 0; // Get the max height for normalization
+    var currUid = currentUser?.uid??"";
+    print("BUILD CHART");
 
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: List.generate(7, (index) {
-        int dayPoints = points[index];
+    return FutureBuilder(
+        future: workoutPlanService.getPointsList(currUid),
+        builder: (context, snapshot)
+        {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return Center(child: CircularProgressIndicator());
+          }
+          points = (snapshot.data??[0,0,0,0,0,0,0]) as List<int>;
+          print(points);
+          int maxHeight = points.isNotEmpty ? points.reduce((a, b) => a > b ? a : b) : 0; // Get the max height for normalization
+          return Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(7, (index) {
+              int dayPoints = points[index];
 
-        // Calculate the normalized height based on the max height
-        double normalizedHeight = (dayPoints / maxHeight) * 100; // Adjust as needed
+              // Calculate the normalized height based on the max height
+              double normalizedHeight = maxHeight==0 ? 0 : (dayPoints / maxHeight) * 100; // Adjust as needed
 
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            // Stack to ensure all bars start from the same ground
-            Container(
-              height: 100, // Maximum height for the chart
-              width: 45,
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-              ),
-              child: Stack(
+              return Column(
+                mainAxisAlignment: MainAxisAlignment.end,
                 children: [
-                  // Bar
-                  Align(
-                    alignment: Alignment.bottomCenter,
-                    child: Container(
-                      height: normalizedHeight, // Bar height based on points
-                      width: 45,
-                      decoration: BoxDecoration(
-                        color: dayPoints > 0 ? Colors.black : Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(20.0),
-                      ),
+                  // Stack to ensure all bars start from the same ground
+                  Container(
+                    height: 100, // Maximum height for the chart
+                    width: 45,
+                    decoration: BoxDecoration(
+                      color: Colors.transparent,
+                    ),
+                    child: Stack(
+                      children: [
+                        // Bar
+                        Align(
+                          alignment: Alignment.bottomCenter,
+                          child: Container(
+                            height: normalizedHeight, // Bar height based on points
+                            width: 45,
+                            decoration: BoxDecoration(
+                              color: dayPoints > 0 ? Colors.black : Colors.grey.shade200,
+                              borderRadius: BorderRadius.circular(20.0),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    weekDays[index],
+                    style: TextStyle(
+                      color: dayPoints > 0 ? Colors.black : Colors.grey,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              weekDays[index],
-              style: TextStyle(
-                color: dayPoints > 0 ? Colors.black : Colors.grey,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        );
-      }),
-    );
+              );
+            }),
+          );
+        });
   }
 }
