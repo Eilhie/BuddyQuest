@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:software_engineering_project/services/user_sevice.dart';
 import 'reply_page.dart';
 import 'setting_page.dart';
 
@@ -22,6 +23,7 @@ class _ForumPageState extends State<ForumPage> {
   Query _postQuery = FirebaseFirestore.instance
       .collection('forum')
       .orderBy('timestamp', descending: true);
+
 
   @override
   void initState() {
@@ -235,6 +237,7 @@ class _ForumPageState extends State<ForumPage> {
 
   @override
   Widget build(BuildContext context) {
+    UserService userService = UserService();
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -298,13 +301,22 @@ class _ForumPageState extends State<ForumPage> {
                     final postId = _posts[index].id;
                     return Column(
                       children: [
-                        _buildForumCard(
-                          postId,
-                          post['fullname'] ?? 'Unknown',
-                          post['content'] ?? '',
-                          post['likes'] ?? 0,
-                          post['timestamp'] as Timestamp?,
-                          post['uid'] ?? '',
+                        FutureBuilder(
+                            future: userService.getUserProfilePicture(post['uid']),
+                            builder: (context, snapshot)
+                            {
+                              if(snapshot.connectionState == ConnectionState.waiting)
+                              {
+                                return Center(child:CircularProgressIndicator());
+                              }
+                              return _buildForumCard(postId,
+                                  post['fullname'] ?? 'Unknown',
+                                  post['content'] ?? '',
+                                  post['likes'] ?? 0,
+                                  post['timestamp'] as Timestamp?,
+                                  snapshot.data!
+                              );
+                            }
                         ),
                         SizedBox(height: 8),
                       ],
@@ -320,44 +332,58 @@ class _ForumPageState extends State<ForumPage> {
   }
 
   Widget _buildPostInputField() {
-    return Container(
-      padding: const EdgeInsets.all(16.0),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(8.0),
-        color: Colors.grey[200],
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            backgroundColor: Colors.green,
-            child: Icon(Icons.person, color: Colors.white),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: TextField(
-              controller: _postController,
-              decoration: const InputDecoration(
-                hintText: "What's on your mind?",
-                border: InputBorder.none,
-              ),
+    UserService userService = UserService();
+    final user = FirebaseAuth.instance.currentUser;
+    String currUid = user!.uid;
+    return FutureBuilder(
+        future: userService.getUserProfilePicture(currUid),
+        builder: (context, snapshot)
+        {
+          if(snapshot.connectionState == ConnectionState.waiting)
+          {
+            return Center(child:CircularProgressIndicator());
+          }
+          var profileImage = snapshot.data!;
+          var profilePath = "assets/profiles/$profileImage";
+          return Container(
+            padding: const EdgeInsets.all(16.0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(8.0),
+              color: Colors.grey[200],
             ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              _handlePostAction(context);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.purple[200],
+            child: Row(
+              children: [
+                CircleAvatar(
+                    backgroundColor: Colors.green,
+                    child: CircleAvatar(backgroundImage:AssetImage(profilePath))
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: TextField(
+                    controller: _postController,
+                    decoration: const InputDecoration(
+                      hintText: "What's on your mind?",
+                      border: InputBorder.none,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: () {
+                    _handlePostAction(context);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.purple[200],
+                  ),
+                  child: const Text("Post"),
+                ),
+              ],
             ),
-            child: const Text("Post"),
-          ),
-        ],
-      ),
-    );
+          );
+        }) ;
+
   }
 
-  Widget _buildForumCard(String postId, String userName, String postContent,
-      int likes, Timestamp? timestamp, String userId) {
+  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp, String profileImage) {
     String formattedTime = "Unknown Time";
     if (timestamp != null) {
       final dateTime = timestamp.toDate();
@@ -365,7 +391,8 @@ class _ForumPageState extends State<ForumPage> {
       "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year} "
           "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
     }
-
+    UserService userService = UserService();
+    final profilePath = "assets/profiles/$profileImage";
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
@@ -385,11 +412,10 @@ class _ForumPageState extends State<ForumPage> {
         children: [
           Row(
             children: [
-              const CircleAvatar(
-                backgroundColor: Colors.green,
-                child: Icon(Icons.person, color: Colors.white),
+              CircleAvatar(
+                  backgroundImage: AssetImage(profilePath)
               ),
-              SizedBox(width: 10),
+              const SizedBox(width: 10),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -406,17 +432,6 @@ class _ForumPageState extends State<ForumPage> {
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
-                ),
-              ),
-              IconButton(
-                onPressed: () => _toggleFollow(userId, userName),
-                icon: Icon(
-                  followingUsers.contains(userId)
-                      ? Icons.person_remove
-                      : Icons.person_add,
-                  color: followingUsers.contains(userId)
-                      ? Colors.red
-                      : Colors.blue,
                 ),
               ),
             ],
@@ -489,12 +504,12 @@ class _ForumPageState extends State<ForumPage> {
                 icon: const Icon(Icons.reply, color: Colors.red),
                 label: const Text('Report', style: TextStyle(color: Colors.red)),
               ),
-
             ],
           ),
         ],
       ),
     );
+
   }
 
   Future<void> _addPostToFirestore(String postContent) async {

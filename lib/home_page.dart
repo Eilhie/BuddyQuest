@@ -442,7 +442,7 @@ class _HomePageState extends State<HomePage> {
                   return Column(
                     children: [
                       FutureBuilder(
-                          future: userService.getUserProfilePicture(currUid!),
+                          future: userService.getUserProfilePicture(post['uid']),
                           builder: (context, snapshot)
                           {
                             if(snapshot.connectionState == ConnectionState.waiting)
