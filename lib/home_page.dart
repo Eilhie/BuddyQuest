@@ -661,7 +661,7 @@ class _HomePageState extends State<HomePage> {
 // Streak Chart Widget (UI Only)
 class StreakChart extends StatelessWidget {
   List<bool> completedDays = []; // Number of completed streak days out of 7
-  final List<String> weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  final List<String> weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   final workoutService = WorkoutPlanService();
   final currentUser = FirebaseAuth.instance.currentUser;
 
@@ -717,7 +717,7 @@ class StreakChart extends StatelessWidget {
 
 class PointsChart extends StatelessWidget {
   List<int> points = []; // List containing the points for each day
-  final List<String> weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  final List<String> weekDays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   final workoutPlanService = WorkoutPlanService();
   final currentUser = FirebaseAuth.instance.currentUser;
 
