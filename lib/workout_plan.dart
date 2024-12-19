@@ -50,7 +50,8 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
     'Tricep Extension': 'assets/workoutAsset/GIF_Tricep_Extension.gif',
     'Dead Lift': 'assets/workoutAsset/GIF_Dead_Lift.gif',
     'Reverse Dumbbell Flyes': 'assets/workoutAsset/GIF_Reverse_Dumbbell_Flyes.gif',
-    'Kardio': 'assets/workoutAsset/GIF_Walk.gif'
+    'Kardio': 'assets/workoutAsset/GIF_Walk.gif',
+    'Dumbbell_Chest_Flyes': 'assets/workoutAsset/GIF_Dumbbell_Chest_Flyes.gif'
     // Add more workouts and their respective GIFs here
   };
 
