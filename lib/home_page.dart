@@ -441,12 +441,22 @@ class _HomePageState extends State<HomePage> {
                   final post = postDoc.data() as Map<String, dynamic>;
                   return Column(
                     children: [
-                      _buildForumCard(
-                        postDoc.id,
-                        post['fullname'] ?? 'Unknown',
-                        post['content'] ?? '',
-                        post['likes'] ?? 0,
-                        post['timestamp'] as Timestamp?,
+                      FutureBuilder(
+                          future: userService.getUserProfilePicture(currUid!),
+                          builder: (context, snapshot)
+                          {
+                            if(snapshot.connectionState == ConnectionState.waiting)
+                            {
+                              return Center(child:CircularProgressIndicator());
+                            }
+                            return _buildForumCard(postDoc.id,
+                              post['fullname'] ?? 'Unknown',
+                              post['content'] ?? '',
+                              post['likes'] ?? 0,
+                              post['timestamp'] as Timestamp?,
+                              snapshot.data!
+                            );
+                          }
                       ),
                       const SizedBox(height: 20), // Add space after each forum card
                     ],
@@ -516,7 +526,7 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp) {
+  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp, String profileImage) {
     String formattedTime = "Unknown Time";
     if (timestamp != null) {
       final dateTime = timestamp.toDate();
@@ -524,7 +534,8 @@ class _HomePageState extends State<HomePage> {
       "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year} "
           "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
     }
-
+    UserService userService = UserService();
+    final profilePath = "assets/profiles/$profileImage";
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
@@ -544,9 +555,8 @@ class _HomePageState extends State<HomePage> {
         children: [
           Row(
             children: [
-              const CircleAvatar(
-                backgroundColor: Colors.green,
-                child: Icon(Icons.person, color: Colors.white),
+              CircleAvatar(
+                  backgroundImage: AssetImage(profilePath)
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -642,6 +652,7 @@ class _HomePageState extends State<HomePage> {
         ],
       ),
     );
+
   }
 
 
