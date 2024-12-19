@@ -36,8 +36,8 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
     'Plank': 'assets/workoutAsset/GIF_Plank.gif',
     'Walk': 'assets/workoutAsset/GIF_Walk.gif',
     'Back Up': 'assets/workoutAsset/GIF_Back_Up.gif',
-    'Stretching': 'assets/workoutAsset/GIF_Stretching.gif',
-    'Yoga': 'assets/workoutAsset/GIF_Yoga.gif',
+    'Stretching Dinamis dan Statis': 'assets/workoutAsset/GIF_Stretching.gif',
+    'Yoga Dasar': 'assets/workoutAsset/GIF_Yoga.gif',
     'Bench Press': 'assets/workoutAsset/GIF_Bench_Press.gif',
     'Incline Bench Press': 'assets/workoutAsset/GIF_Incline_Bench_Press.gif',
     'Cable Crossover': 'assets/workoutAsset/GIF_Cable_Crossover.gif',
@@ -49,7 +49,8 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
     'Bicep Curl': 'assets/workoutAsset/GIF_Bicep_Curl.gif',
     'Tricep Extension': 'assets/workoutAsset/GIF_Tricep_Extension.gif',
     'Dead Lift': 'assets/workoutAsset/GIF_Dead_Lift.gif',
-    'Reverse Dumbbell Flyes': 'assets/workoutAsset/GIF_Reverse_Dumbell_Flyes.gif',
+    'Reverse Dumbbell Flyes': 'assets/workoutAsset/GIF_Reverse_Dumbbell_Flyes.gif',
+    'Kardio': 'assets/workoutAsset/GIF_Walk.gif'
     // Add more workouts and their respective GIFs here
   };
 
