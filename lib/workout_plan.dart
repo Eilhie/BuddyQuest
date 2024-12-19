@@ -31,9 +31,25 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
 
   // Define a mapping of workouts to GIFs
   final Map<String, String> workoutGifs = {
-    'Pushup': 'assets/workoutAsset/GIF_PushUp.gif',
-    'Squat': 'assets/workoutAsset/GIF_Squad_with_Dumbell.gif',
-    'Plank': 'assets/workoutAsset/GIF_PLANK_CHICK.gif'
+    'Pushup': 'assets/workoutAsset/GIF_Push_Up.gif',
+    'Squat': 'assets/workoutAsset/GIF_Squat.gif',
+    'Plank': 'assets/workoutAsset/GIF_Plank.gif',
+    'Walk': 'assets/workoutAsset/GIF_Walk.gif',
+    'Back Up': 'assets/workoutAsset/GIF_Back_Up.gif',
+    'Stretching': 'assets/workoutAsset/GIF_Stretching.gif',
+    'Yoga': 'assets/workoutAsset/GIF_Yoga.gif',
+    'Bench Press': 'assets/workoutAsset/GIF_Bench_Press.gif',
+    'Incline Bench Press': 'assets/workoutAsset/GIF_Incline_Bench_Press.gif',
+    'Cable Crossover': 'assets/workoutAsset/GIF_Cable_Crossover.gif',
+    'Pull Up': 'assets/workoutAsset/GIF_Pull_Up.gif',
+    'Dumbbell Row': 'assets/workoutAsset/GIF_Dumbbell_Row.gif',
+    'Leg Extension': 'assets/workoutAsset/GIF_Leg_Extension.gif',
+    'Leg Curl': 'assets/workoutAsset/GIF_Leg_Curl.gif',
+    'Lateral Raise': 'assets/workoutAsset/GIF_Lateral_Raise.gif',
+    'Bicep Curl': 'assets/workoutAsset/GIF_Bicep_Curl.gif',
+    'Tricep Extension': 'assets/workoutAsset/GIF_Tricep_Extension.gif',
+    'Dead Lift': 'assets/workoutAsset/GIF_Dead_Lift.gif',
+    'Reverse Dumbbell Flyes': 'assets/workoutAsset/GIF_Reverse_Dumbell_Flyes.gif',
     // Add more workouts and their respective GIFs here
   };
 
