@@ -188,6 +188,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -381,7 +382,7 @@ class _HomePageState extends State<HomePage> {
 
 
             const SizedBox(height: 30),
-              const Row(
+              Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
@@ -392,7 +393,22 @@ class _HomePageState extends State<HomePage> {
                       color: Colors.black,
                     ),
                   ),
-                  Text('4/7 days'),
+                  FutureBuilder(
+                      future: workoutPlanService.getDidWorkoutList(currUid??""),
+                      builder: (context, snapshot)
+                      {
+                        if(snapshot.connectionState == ConnectionState.waiting)
+                        {
+                          return Center(child:CircularProgressIndicator());
+                        }
+                        List<bool> didWorkoutList = snapshot.data!;
+                        var didCount = 0;
+                        for(bool didWorkout in didWorkoutList)
+                        {
+                          didCount += didWorkout?1:0;
+                        }
+                        return Text("$didCount/7 days");
+                      })
                 ],
               ),
               StreakChart(),
@@ -676,8 +692,6 @@ class StreakChart extends StatelessWidget {
           {
             Center(child: CircularProgressIndicator());
           }
-          print("BUILD STREAK CHART");
-          print(snapshot.data);
           completedDays = (snapshot.data??[false,false,false,false,false,false,false]) as List<bool>;
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -725,7 +739,6 @@ class PointsChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     var currUid = currentUser?.uid??"";
-    print("BUILD CHART");
 
     return FutureBuilder(
         future: workoutPlanService.getPointsList(currUid),
@@ -735,7 +748,6 @@ class PointsChart extends StatelessWidget {
             return Center(child: CircularProgressIndicator());
           }
           points = (snapshot.data??[0,0,0,0,0,0,0]) as List<int>;
-          print(points);
           int maxHeight = points.isNotEmpty ? points.reduce((a, b) => a > b ? a : b) : 0; // Get the max height for normalization
           return Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
