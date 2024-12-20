@@ -51,8 +51,9 @@ class _WorkoutPlanPageState extends State<WorkoutPlanPage> {
     'Dead Lift': 'assets/workoutAsset/GIF_Dead_Lift.gif',
     'Reverse Dumbbell Flyes': 'assets/workoutAsset/GIF_Reverse_Dumbbell_Flyes.gif',
     'Kardio': 'assets/workoutAsset/GIF_Walk.gif',
-    'Dumbbell Chest Flyes': 'assets/workoutAsset/GIF_Dumbbell_Chest_Flyes.gif'
-    // Add more workouts and their respective GIFs here
+    'Dumbbell Chest Flyes': 'assets/workoutAsset/GIF_Dumbbell_Chest_Flyes.gif',
+    'Tricep Dips' : 'assets/workoutAsset/GIF_Tricep_Dips.gif',
+    'Lunges': 'assets/workoutAsset/GIF_Lunges.gif'
   };
 
   int _currentIndex = 0; // To track the selected tab
