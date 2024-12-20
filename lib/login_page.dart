@@ -77,7 +77,7 @@ class _LoginPageState extends State<LoginPage> {
             'email': user.email,
             'points': 0, // Default value
             'workout_type': "", // Default value
-            'avatar': 'boy-default',
+            'avatar': 'boy-default.png',
             "currentStreak" : 0,
             "highestStreak" : 0,
             "lastStreakUpdate":DateTime.now().subtract(Duration(days:1)),
