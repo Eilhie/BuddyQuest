@@ -107,7 +107,7 @@ class _LoginPageState extends State<LoginPage> {
             'day6': <String, dynamic>{"done_exercises":<String>[], "points_earned":0},
           });
 
-          Navigator.pushReplacement(
+          await Navigator.pushReplacement(
             context,
             MaterialPageRoute(builder: (context) => CalibrationPage()),
           );
