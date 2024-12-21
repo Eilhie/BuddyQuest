@@ -372,7 +372,7 @@ class _HomePageState extends State<HomePage> {
                         {
                           didCount += didWorkout?1:0;
                         }
-                        return Text("$didCount/7 days");
+                        return Text("Total Streaks $didCount Days");
                       })
                 ],
               ),
