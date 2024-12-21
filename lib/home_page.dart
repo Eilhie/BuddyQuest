@@ -377,6 +377,8 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               StreakChart(),
+
+
               const SizedBox(height: 20),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -405,6 +407,8 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
               PointsChart(),
+
+
               const SizedBox(height: 30),
               const Text(
                 "Latest Forum",
@@ -700,67 +704,92 @@ class PointsChart extends StatelessWidget {
   final workoutPlanService = WorkoutPlanService();
   final currentUser = FirebaseAuth.instance.currentUser;
 
-
   @override
   Widget build(BuildContext context) {
-    var currUid = currentUser?.uid??"";
+    var currUid = currentUser?.uid ?? "";
 
     return FutureBuilder(
-        future: workoutPlanService.getPointsList(currUid),
-        builder: (context, snapshot)
-        {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          }
-          points = (snapshot.data??[0,0,0,0,0,0,0]) as List<int>;
-          int maxHeight = points.isNotEmpty ? points.reduce((a, b) => a > b ? a : b) : 0; // Get the max height for normalization
-          return Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: List.generate(7, (index) {
-              int dayPoints = points[index];
+      future: workoutPlanService.getPointsList(currUid),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return Center(child: CircularProgressIndicator());
+        }
 
-              // Calculate the normalized height based on the max height
-              double normalizedHeight = maxHeight==0 ? 0 : (dayPoints / maxHeight) * 100; // Adjust as needed
+        points = (snapshot.data ?? [0, 0, 0, 0, 0, 0, 0]) as List<int>;
+        int maxHeight = points.isNotEmpty ? points.reduce((a, b) => a > b ? a : b) : 0; // Get the max height for normalization
+        int todayIndex = DateTime.now().weekday - 1; // Monday is 0
+        int yesterdayIndex = (todayIndex - 1 + 7) % 7; // Wrap around to handle Sundays
+        int todayPoints = points[todayIndex];
+        int yesterdayPoints = points[yesterdayIndex];
 
-              return Column(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  // Stack to ensure all bars start from the same ground
-                  Container(
-                    height: 100, // Maximum height for the chart
-                    width: 45,
-                    decoration: BoxDecoration(
-                      color: Colors.transparent,
-                    ),
-                    child: Stack(
-                      children: [
-                        // Bar
-                        Align(
-                          alignment: Alignment.bottomCenter,
-                          child: Container(
-                            height: normalizedHeight, // Bar height based on points
-                            width: 45,
-                            decoration: BoxDecoration(
-                              color: dayPoints > 0 ? Colors.black : Colors.grey.shade200,
-                              borderRadius: BorderRadius.circular(20.0),
+        // Calculate percentage change from yesterday
+        double percentageChange = yesterdayPoints == 0
+            ? (todayPoints > 0 ? 100 : 0) // Handle division by zero
+            : ((todayPoints - yesterdayPoints) / yesterdayPoints) * 100;
+
+        return Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Bar chart row
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: List.generate(7, (index) {
+                int dayPoints = points[index];
+                double normalizedHeight = maxHeight == 0 ? 0 : (dayPoints / maxHeight) * 100;
+
+                return Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    // Bar container
+                    Container(
+                      height: 100, // Maximum height for the chart
+                      width: 45,
+                      decoration: BoxDecoration(
+                        color: Colors.transparent,
+                      ),
+                      child: Stack(
+                        children: [
+                          Align(
+                            alignment: Alignment.bottomCenter,
+                            child: Container(
+                              height: normalizedHeight, // Bar height based on points
+                              width: 45,
+                              decoration: BoxDecoration(
+                                color: dayPoints > 0 ? Colors.black : Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(20.0),
+                              ),
                             ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    weekDays[index],
-                    style: TextStyle(
-                      color: dayPoints > 0 ? Colors.black : Colors.grey,
-                      fontWeight: FontWeight.bold,
+                    const SizedBox(height: 4),
+                    Text(
+                      weekDays[index],
+                      style: TextStyle(
+                        color: dayPoints > 0 ? Colors.black : Colors.grey,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
-              );
-            }),
-          );
-        });
+                  ],
+                );
+              }),
+            ),
+            const SizedBox(height: 20),
+            // Percentage change text
+            Text(
+              "Change from yesterday: ${percentageChange.toStringAsFixed(1)}%",
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: percentageChange >= 0 ? Colors.green : Colors.red,
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 }
+
+
