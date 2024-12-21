@@ -80,11 +80,8 @@ class _LoginPageState extends State<LoginPage> {
             'avatar': 'boy-default.png',
             "currentStreak" : 0,
             "highestStreak" : 0,
-            "lastStreakUpdate":DateTime.now().subtract(Duration(days:1)),
-            'follow_master': {
-              'following': <String>[],
-              'follower': <String>[]
-            }
+            "lastStreakUpdate":DateTime.now().subtract(Duration(days:1))
+
           }).catchError((error) {
             print('Error storing user data: $error');
             ScaffoldMessenger.of(context).showSnackBar(

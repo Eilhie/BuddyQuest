@@ -74,11 +74,8 @@ class _RegisterPageState extends State<RegisterPage> {
           "currentStreak" : 0,
           "highestStreak" : 0,
           "lastStreakUpdate":DateTime.now().subtract(Duration(days:1)),
-          'avatar': 'boy-default.png',
-          'follow_master': {
-            'following': <String>[],
-            'follower': <String>[]
-          }
+          'avatar': 'boy-default.png'
+
         });
 
         var currDate = DateTime.now();
