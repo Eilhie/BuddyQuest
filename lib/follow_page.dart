@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
-import 'setting_page.dart'; // Ensure you have this page implemented
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'setting_page.dart';
 
 void main() {
   runApp(MyApp());
@@ -14,7 +16,62 @@ class MyApp extends StatelessWidget {
   }
 }
 
-class FollowingFollowersPage extends StatelessWidget {
+class FollowingFollowersPage extends StatefulWidget {
+  @override
+  _FollowingFollowersPageState createState() => _FollowingFollowersPageState();
+}
+
+class _FollowingFollowersPageState extends State<FollowingFollowersPage> {
+  List<Map<String, String>> _following = [];
+  List<Map<String, String>> _followers = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchData();
+  }
+
+  Future<void> _fetchData() async {
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+      if (user == null) return;
+
+      // Fetch following and followers
+      final userDoc = FirebaseFirestore.instance.collection('users').doc(user.uid);
+      final followingSnapshot = await userDoc.collection('following').get();
+      final followersSnapshot = await userDoc.collection('followers').get();
+
+      // Helper function to fetch user details
+      Future<Map<String, String>> fetchUserDetails(String uid) async {
+        final userSnapshot = await FirebaseFirestore.instance.collection('users').doc(uid).get();
+        final data = userSnapshot.data();
+        if (data != null) {
+          return {
+            'fullname': data['fullname'] ?? 'Unknown User',
+            'avatar': data['avatar'] ?? 'default.png',
+          };
+        }
+        return {'fullname': 'Unknown User', 'avatar': 'default.png'};
+      }
+
+      // Fetch details for each UID
+      final following = await Future.wait(followingSnapshot.docs.map((doc) => fetchUserDetails(doc.id)));
+      final followers = await Future.wait(followersSnapshot.docs.map((doc) => fetchUserDetails(doc.id)));
+
+      setState(() {
+        _following = following;
+        _followers = followers;
+        _isLoading = false;
+      });
+    } catch (e) {
+      print('Error fetching data: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
@@ -62,29 +119,33 @@ class FollowingFollowersPage extends StatelessWidget {
             ),
             Expanded(
               // TabBarView content
-              child: TabBarView(
+              child: _isLoading
+                  ? Center(child: CircularProgressIndicator())
+                  : TabBarView(
                 children: [
                   // Tab content for "Following"
                   ListView.builder(
-                    itemCount: 20, // Replace with your following count
+                    itemCount: _following.length,
                     itemBuilder: (context, index) {
+                      final user = _following[index];
                       return ListTile(
                         leading: CircleAvatar(
-                          child: Text('F$index'), // Example avatar
+                          backgroundImage: AssetImage('assets/profiles/${user['avatar']}'),
                         ),
-                        title: Text('Following User $index'),
+                        title: Text(user['fullname']!),
                       );
                     },
                   ),
                   // Tab content for "Followers"
                   ListView.builder(
-                    itemCount: 15, // Replace with your followers count
+                    itemCount: _followers.length,
                     itemBuilder: (context, index) {
+                      final user = _followers[index];
                       return ListTile(
                         leading: CircleAvatar(
-                          child: Text('R$index'), // Example avatar
+                          backgroundImage: AssetImage('assets/profiles/${user['avatar']}'),
                         ),
-                        title: Text('Follower User $index'),
+                        title: Text(user['fullname']!),
                       );
                     },
                   ),
