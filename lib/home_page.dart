@@ -771,6 +771,12 @@ class PointsChart extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    Text(
+                      '$dayPoints p',
+                      style: TextStyle(
+                        color: Colors.green,
+                      ),
+                    ),
                   ],
                 );
               }),
