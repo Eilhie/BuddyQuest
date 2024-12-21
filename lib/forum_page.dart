@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:software_engineering_project/services/user_sevice.dart';
 import 'reply_page.dart';
 import 'setting_page.dart';
+// Make sure this import matches your actual user service file and class name:
+import 'package:software_engineering_project/services/user_sevice.dart';
 
 class ForumPage extends StatefulWidget {
   @override
@@ -24,6 +25,8 @@ class _ForumPageState extends State<ForumPage> {
       .collection('forum')
       .orderBy('timestamp', descending: true);
 
+  // Instantiate the user service
+  final UserService userService = UserService();
 
   @override
   void initState() {
@@ -121,7 +124,7 @@ class _ForumPageState extends State<ForumPage> {
     } catch (e) {
       print("Error toggling follow: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text("An error occurred. Please try again."),
           behavior: SnackBarBehavior.floating,
           backgroundColor: Colors.red,
@@ -237,7 +240,6 @@ class _ForumPageState extends State<ForumPage> {
 
   @override
   Widget build(BuildContext context) {
-    UserService userService = UserService();
     return Scaffold(
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -297,29 +299,49 @@ class _ForumPageState extends State<ForumPage> {
                         ),
                       );
                     }
-                    final post = _posts[index].data() as Map<String, dynamic>;
+
+                    final data = _posts[index].data() as Map<String, dynamic>? ?? {};
                     final postId = _posts[index].id;
-                    return Column(
-                      children: [
-                        FutureBuilder(
-                            future: userService.getUserProfilePicture(post['uid']),
-                            builder: (context, snapshot)
-                            {
-                              if(snapshot.connectionState == ConnectionState.waiting)
-                              {
-                                return Center(child:CircularProgressIndicator());
-                              }
-                              return _buildForumCard(postId,
-                                  post['fullname'] ?? 'Unknown',
-                                  post['content'] ?? '',
-                                  post['likes'] ?? 0,
-                                  post['timestamp'] as Timestamp?,
-                                  snapshot.data!
-                              );
-                            }
-                        ),
-                        SizedBox(height: 8),
-                      ],
+
+                    // Safely handle timestamp
+                    Timestamp? timestampValue;
+                    if (data['timestamp'] is Timestamp) {
+                      timestampValue = data['timestamp'] as Timestamp?;
+                    }
+
+                    final userId = data['uid'] ?? '';
+
+                    // Use a FutureBuilder to load the profile image
+                    return FutureBuilder(
+                      future: userService.getUserProfilePicture(userId),
+                      builder: (context, snapshot) {
+                        if (snapshot.connectionState == ConnectionState.waiting) {
+                          return const Center(child: Padding(
+                            padding: EdgeInsets.all(8.0),
+                            child: CircularProgressIndicator(),
+                          ));
+                        }
+
+                        String profileImage = 'default_profile.png';
+                        if (snapshot.hasData && snapshot.data != null) {
+                          profileImage = snapshot.data as String;
+                        }
+
+                        return Column(
+                          children: [
+                            _buildForumCard(
+                              postId,
+                              data['fullname'] ?? 'Unknown',
+                              data['content'] ?? '',
+                              data['likes'] ?? 0,
+                              timestampValue,
+                              userId,
+                              profileImage,
+                            ),
+                            const SizedBox(height: 8),
+                          ],
+                        );
+                      },
                     );
                   },
                 ),
@@ -332,58 +354,44 @@ class _ForumPageState extends State<ForumPage> {
   }
 
   Widget _buildPostInputField() {
-    UserService userService = UserService();
-    final user = FirebaseAuth.instance.currentUser;
-    String currUid = user!.uid;
-    return FutureBuilder(
-        future: userService.getUserProfilePicture(currUid),
-        builder: (context, snapshot)
-        {
-          if(snapshot.connectionState == ConnectionState.waiting)
-          {
-            return Center(child:CircularProgressIndicator());
-          }
-          var profileImage = snapshot.data!;
-          var profilePath = "assets/profiles/$profileImage";
-          return Container(
-            padding: const EdgeInsets.all(16.0),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8.0),
-              color: Colors.grey[200],
+    return Container(
+      padding: const EdgeInsets.all(16.0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8.0),
+        color: Colors.grey[200],
+      ),
+      child: Row(
+        children: [
+          const CircleAvatar(
+            backgroundColor: Colors.green,
+            child: Icon(Icons.person, color: Colors.white),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: TextField(
+              controller: _postController,
+              decoration: const InputDecoration(
+                hintText: "What's on your mind?",
+                border: InputBorder.none,
+              ),
             ),
-            child: Row(
-              children: [
-                CircleAvatar(
-                    backgroundColor: Colors.green,
-                    child: CircleAvatar(backgroundImage:AssetImage(profilePath))
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: TextField(
-                    controller: _postController,
-                    decoration: const InputDecoration(
-                      hintText: "What's on your mind?",
-                      border: InputBorder.none,
-                    ),
-                  ),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    _handlePostAction(context);
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.purple[200],
-                  ),
-                  child: const Text("Post"),
-                ),
-              ],
+          ),
+          ElevatedButton(
+            onPressed: () {
+              _handlePostAction(context);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.purple[200],
             ),
-          );
-        }) ;
-
+            child: const Text("Post"),
+          ),
+        ],
+      ),
+    );
   }
 
-  Widget _buildForumCard(String postId, String userName, String postContent, int likes, Timestamp? timestamp, String profileImage) {
+  Widget _buildForumCard(String postId, String userName, String postContent,
+      int likes, Timestamp? timestamp, String userId, String profileImage) {
     String formattedTime = "Unknown Time";
     if (timestamp != null) {
       final dateTime = timestamp.toDate();
@@ -391,8 +399,9 @@ class _ForumPageState extends State<ForumPage> {
       "${dateTime.day.toString().padLeft(2, '0')}-${dateTime.month.toString().padLeft(2, '0')}-${dateTime.year} "
           "${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}";
     }
-    UserService userService = UserService();
+
     final profilePath = "assets/profiles/$profileImage";
+
     return Container(
       padding: const EdgeInsets.all(12.0),
       decoration: BoxDecoration(
@@ -403,7 +412,7 @@ class _ForumPageState extends State<ForumPage> {
             color: Colors.grey.withOpacity(0.3),
             blurRadius: 4,
             spreadRadius: 2,
-            offset: Offset(0, 2),
+            offset: const Offset(0, 2),
           ),
         ],
       ),
@@ -413,7 +422,8 @@ class _ForumPageState extends State<ForumPage> {
           Row(
             children: [
               CircleAvatar(
-                  backgroundImage: AssetImage(profilePath)
+                backgroundColor: Colors.grey[300],
+                backgroundImage: AssetImage(profilePath),
               ),
               const SizedBox(width: 10),
               Expanded(
@@ -432,6 +442,17 @@ class _ForumPageState extends State<ForumPage> {
                       style: const TextStyle(fontSize: 12, color: Colors.grey),
                     ),
                   ],
+                ),
+              ),
+              IconButton(
+                onPressed: () => _toggleFollow(userId, userName),
+                icon: Icon(
+                  followingUsers.contains(userId)
+                      ? Icons.person_remove
+                      : Icons.person_add,
+                  color: followingUsers.contains(userId)
+                      ? Colors.red
+                      : Colors.blue,
                 ),
               ),
             ],
@@ -504,12 +525,12 @@ class _ForumPageState extends State<ForumPage> {
                 icon: const Icon(Icons.reply, color: Colors.red),
                 label: const Text('Report', style: TextStyle(color: Colors.red)),
               ),
+
             ],
           ),
         ],
       ),
     );
-
   }
 
   Future<void> _addPostToFirestore(String postContent) async {
@@ -529,15 +550,25 @@ class _ForumPageState extends State<ForumPage> {
     }
   }
 
+  Future<void> _reloadPosts() async {
+    setState(() {
+      _posts.clear(); // Clear current list of posts
+      _hasMore = true; // Reset pagination flag
+    });
+    await _loadPosts(); // Reload posts from Firestore
+  }
+
   void _handlePostAction(BuildContext context) {
     String postContent = _postController.text.trim();
 
     if (postContent.isEmpty) {
       _showErrorDialog(context);
     } else {
-      _addPostToFirestore(postContent);
-      _postController.clear();
-      _showPostSuccessDialog(context);
+      _addPostToFirestore(postContent).then((_) {
+        _postController.clear();
+        _reloadPosts();
+        _showPostSuccessDialog(context);
+      });
     }
   }
 
